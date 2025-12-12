@@ -37,7 +37,7 @@ jobs:
 
     steps:
     - name: Checkout código
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Configurar PHP
       uses: shivammathur/setup-php@v2
@@ -83,7 +83,7 @@ jobs:
 
     - name: Upload relatório de testes
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: test-results
         path: storage/logs/
