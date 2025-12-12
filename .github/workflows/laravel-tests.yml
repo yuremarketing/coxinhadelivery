@@ -1,0 +1,64 @@
+name: Laravel Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  laravel-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: coxinhadelivery_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v3
+
+    - name: Configurar PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+        extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, bcmath
+        coverage: none
+
+    - name: Validar composer.json
+      run: composer validate --strict
+
+    - name: Instalar dependências
+      run: composer install --prefer-dist --no-progress --no-interaction
+
+    - name: Copiar .env
+      run: cp .env.example .env
+
+    - name: Gerar key da aplicação
+      run: php artisan key:generate
+
+    - name: Configurar banco de dados
+      run: |
+        php artisan config:clear
+        php artisan migrate:fresh --force
+
+    - name: Executar testes
+      run: php artisan test
+
+    - name: Upload relatório de testes
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-results
+        path: storage/logs/
