@@ -7,6 +7,7 @@ use Tests\TestCase;
 use App\Models\Produto;
 use App\Models\Pedido;
 use App\Models\PedidoItem;
+use App\Models\User;
 use PHPUnit\Framework\Attributes\Test;
 
 class PedidoControllerTest extends TestCase
@@ -188,6 +189,16 @@ class PedidoControllerTest extends TestCase
     #[Test]
     public function api_lista_pedidos_no_admin()
     {
+        // Criar usuário admin
+        $user = User::create([
+            'name' => 'Admin User',
+            'email' => 'admin@test.com',
+            'password' => bcrypt('password123')
+        ]);
+
+        // Criar token para o usuário
+        $token = $user->createToken('test-token')->plainTextToken;
+
         $produto = Produto::create([
             'nome' => 'Produto Admin',
             'descricao' => 'Teste',
@@ -197,27 +208,32 @@ class PedidoControllerTest extends TestCase
             'estoque' => 20
         ]);
 
-        $this->postJson('/api/pedidos', [
-            'cliente_nome' => 'Cliente 1',
-            'cliente_telefone' => '11911112222',
-            'tipo' => 'entrega',
-            'itens' => [[
-                'produto_id' => $produto->id,
-                'quantidade' => 1
-            ]]
-        ]);
+        // Criar pedidos com autenticação
+        $this->withHeader('Authorization', "Bearer {$token}")
+            ->postJson('/api/pedidos', [
+                'cliente_nome' => 'Cliente 1',
+                'cliente_telefone' => '11911112222',
+                'tipo' => 'entrega',
+                'itens' => [[
+                    'produto_id' => $produto->id,
+                    'quantidade' => 1
+                ]]
+            ]);
 
-        $this->postJson('/api/pedidos', [
-            'cliente_nome' => 'Cliente 2',
-            'cliente_telefone' => '11933334444',
-            'tipo' => 'retirada',
-            'itens' => [[
-                'produto_id' => $produto->id,
-                'quantidade' => 2
-            ]]
-        ]);
+        $this->withHeader('Authorization', "Bearer {$token}")
+            ->postJson('/api/pedidos', [
+                'cliente_nome' => 'Cliente 2',
+                'cliente_telefone' => '11933334444',
+                'tipo' => 'retirada',
+                'itens' => [[
+                    'produto_id' => $produto->id,
+                    'quantidade' => 2
+                ]]
+            ]);
 
-        $response = $this->getJson('/api/admin/pedidos');
+        // Agora lista os pedidos com autenticação
+        $response = $this->withHeader('Authorization', "Bearer {$token}")
+                        ->getJson('/api/admin/pedidos');
 
         $response->assertStatus(200)
                  ->assertJson([
@@ -252,6 +268,14 @@ class PedidoControllerTest extends TestCase
     #[Test]
     public function api_atualiza_status_do_pedido()
     {
+        // Criar usuário e token
+        $user = User::create([
+            'name' => 'Admin Status',
+            'email' => 'status@test.com',
+            'password' => bcrypt('password123')
+        ]);
+        $token = $user->createToken('test-token')->plainTextToken;
+
         $produto = Produto::create([
             'nome' => 'Produto Status',
             'descricao' => 'Teste',
@@ -261,7 +285,8 @@ class PedidoControllerTest extends TestCase
             'estoque' => 15
         ]);
 
-        $createResponse = $this->postJson('/api/pedidos', [
+        $createResponse = $this->withHeader('Authorization', "Bearer {$token}")
+                              ->postJson('/api/pedidos', [
             'cliente_nome' => 'Cliente Status',
             'cliente_telefone' => '11955556666',
             'tipo' => 'entrega',
@@ -273,7 +298,8 @@ class PedidoControllerTest extends TestCase
 
         $pedidoId = $createResponse->json('data.pedido_id');
 
-        $response = $this->putJson("/api/admin/pedidos/{$pedidoId}/status", [
+        $response = $this->withHeader('Authorization', "Bearer {$token}")
+                        ->putJson("/api/admin/pedidos/{$pedidoId}/status", [
             'status' => 'confirmado'
         ]);
 
@@ -292,6 +318,14 @@ class PedidoControllerTest extends TestCase
     #[Test]
     public function api_nao_atualiza_para_status_invalido()
     {
+        // Criar usuário e token
+        $user = User::create([
+            'name' => 'Admin Invalid',
+            'email' => 'invalid@test.com',
+            'password' => bcrypt('password123')
+        ]);
+        $token = $user->createToken('test-token')->plainTextToken;
+
         $produto = Produto::create([
             'nome' => 'Produto Status Inválido',
             'descricao' => 'Teste',
@@ -301,7 +335,8 @@ class PedidoControllerTest extends TestCase
             'estoque' => 5
         ]);
 
-        $createResponse = $this->postJson('/api/pedidos', [
+        $createResponse = $this->withHeader('Authorization', "Bearer {$token}")
+                              ->postJson('/api/pedidos', [
             'cliente_nome' => 'Cliente Inválido',
             'cliente_telefone' => '11944445555',
             'tipo' => 'retirada',
@@ -313,7 +348,8 @@ class PedidoControllerTest extends TestCase
 
         $pedidoId = $createResponse->json('data.pedido_id');
 
-        $response = $this->putJson("/api/admin/pedidos/{$pedidoId}/status", [
+        $response = $this->withHeader('Authorization', "Bearer {$token}")
+                        ->putJson("/api/admin/pedidos/{$pedidoId}/status", [
             'status' => 'status_invalido'
         ]);
 
