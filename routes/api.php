@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\ProdutoController;
 use App\Http\Controllers\API\PedidoController;
 use App\Http\Controllers\API\AuthController;
+use App\Http\Middleware\IsAdmin;
 
 /*
 |--------------------------------------------------------------------------
@@ -74,15 +75,15 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::put('/me', [AuthController::class, 'updateProfile']);
     });
     
-    // Rotas de administração de produtos
-    Route::prefix('admin/produtos')->group(function () {
+    // Rotas de administração de produtos (apenas admin)
+    Route::middleware([IsAdmin::class])->prefix('admin/produtos')->group(function () {
         Route::post('/', [ProdutoController::class, 'store']);
         Route::put('/{id}', [ProdutoController::class, 'update'])->where('id', '[0-9]+');
         Route::delete('/{id}', [ProdutoController::class, 'destroy'])->where('id', '[0-9]+');
     });
     
-    // Rotas de administração de pedidos
-    Route::prefix('admin/pedidos')->group(function () {
+    // Rotas de administração de pedidos (apenas admin)
+    Route::middleware([IsAdmin::class])->prefix('admin/pedidos')->group(function () {
         Route::get('/', [PedidoController::class, 'index']);
         Route::put('/{id}/status', [PedidoController::class, 'updateStatus']);
         Route::get('/{id}', [PedidoController::class, 'adminShow'])->where('id', '[0-9]+');
