@@ -5,12 +5,13 @@ namespace Tests\Feature\Models;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Models\Produto;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 class ProdutoTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    #[Test]
     public function pode_criar_um_produto()
     {
         // 1. Arrange: Preparar dados
@@ -35,7 +36,7 @@ class ProdutoTest extends TestCase
         $this->assertTrue($produto->disponivel);
     }
 
-    /** @test */
+    #[Test]
     public function scope_disponiveis_filtra_apenas_produtos_disponiveis()
     {
         // Criar produtos com diferentes estados

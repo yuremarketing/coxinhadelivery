@@ -5,9 +5,9 @@ namespace Tests\Unit\Models;
 use Tests\TestCase;
 use App\Models\PedidoItem;
 use App\Models\Pedido;
+use PHPUnit\Framework\Attributes\Test;
 use App\Models\Produto;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use PHPUnit\Framework\Attributes\Test;
 
 class PedidoItemTest extends TestCase
 {
@@ -52,16 +52,15 @@ class PedidoItemTest extends TestCase
     public function calcula_subtotal_automaticamente_se_nao_fornecido()
     {
         $produto = Produto::create([
-            'nome' => 'Coxinha de Frango',
-            'descricao' => 'Coxinha tradicional',
-            'preco' => 5.50,
-            'estoque' => 10,
+            'nome' => 'Refrigerante',
+            'preco' => 4.00,
+            'estoque' => 20,
             'disponivel' => true,
-            'categoria' => 'salgados',
+            'categoria' => 'bebidas',
         ]);
 
         $pedido = Pedido::create([
-            'cliente_nome' => 'João Silva',
+            'cliente_nome' => 'Teste',
             'cliente_telefone' => '11999999999',
             'tipo' => 'entrega',
             'valor_total' => 0.00,
@@ -71,58 +70,58 @@ class PedidoItemTest extends TestCase
             'pedido_id' => $pedido->id,
             'produto_id' => $produto->id,
             'quantidade' => 3,
-            'preco_unitario' => 5.50,
+            'preco_unitario' => 4.00,
+            // subtotal não fornecido, deve ser calculado
         ]);
 
-        $this->assertEquals(16.50, $item->subtotal);
+        // Esperado: 3 * 4.00 = 12.00
+        $this->assertEquals(12.00, $item->subtotal);
     }
 
     #[Test]
     public function pertence_a_um_pedido()
     {
         $produto = Produto::create([
-            'nome' => 'Coxinha de Frango',
-            'descricao' => 'Coxinha tradicional',
-            'preco' => 5.50,
-            'estoque' => 10,
+            'nome' => 'Pastel',
+            'preco' => 7.00,
+            'estoque' => 15,
             'disponivel' => true,
             'categoria' => 'salgados',
         ]);
 
         $pedido = Pedido::create([
-            'cliente_nome' => 'João Silva',
+            'cliente_nome' => 'Cliente Teste',
             'cliente_telefone' => '11999999999',
-            'tipo' => 'entrega',
+            'tipo' => 'retirada',
             'valor_total' => 0.00,
         ]);
 
         $item = PedidoItem::create([
             'pedido_id' => $pedido->id,
             'produto_id' => $produto->id,
-            'quantidade' => 2,
-            'preco_unitario' => 5.50,
-            'subtotal' => 11.00,
+            'quantidade' => 1,
+            'preco_unitario' => 7.00,
         ]);
 
-        $this->assertInstanceOf(Pedido::class, $item->pedido);
+        $this->assertNotNull($item->pedido);
         $this->assertEquals($pedido->id, $item->pedido->id);
+        $this->assertEquals('Cliente Teste', $item->pedido->cliente_nome);
     }
 
     #[Test]
     public function pertence_a_um_produto()
     {
         $produto = Produto::create([
-            'nome' => 'Coxinha de Frango',
-            'descricao' => 'Coxinha tradicional',
-            'preco' => 5.50,
-            'estoque' => 10,
+            'nome' => 'Empada',
+            'preco' => 6.50,
+            'estoque' => 8,
             'disponivel' => true,
             'categoria' => 'salgados',
         ]);
 
         $pedido = Pedido::create([
-            'cliente_nome' => 'João Silva',
-            'cliente_telefone' => '11999999999',
+            'cliente_nome' => 'Outro Cliente',
+            'cliente_telefone' => '11988888888',
             'tipo' => 'entrega',
             'valor_total' => 0.00,
         ]);
@@ -131,76 +130,108 @@ class PedidoItemTest extends TestCase
             'pedido_id' => $pedido->id,
             'produto_id' => $produto->id,
             'quantidade' => 2,
-            'preco_unitario' => 5.50,
-            'subtotal' => 11.00,
+            'preco_unitario' => 6.50,
         ]);
 
-        $this->assertInstanceOf(Produto::class, $item->produto);
+        $this->assertNotNull($item->produto);
         $this->assertEquals($produto->id, $item->produto->id);
+        $this->assertEquals('Empada', $item->produto->nome);
+        $this->assertEquals(6.50, $item->produto->preco);
     }
 
     #[Test]
     public function preco_unitario_deve_ser_preservado()
     {
         $produto = Produto::create([
-            'nome' => 'Coxinha de Frango',
-            'descricao' => 'Coxinha tradicional',
-            'preco' => 10.00,
-            'estoque' => 10,
+            'nome' => 'Coca-Cola',
+            'preco' => 5.00,
+            'estoque' => 30,
             'disponivel' => true,
-            'categoria' => 'salgados',
+            'categoria' => 'bebidas',
         ]);
 
         $pedido = Pedido::create([
-            'cliente_nome' => 'João Silva',
-            'cliente_telefone' => '11999999999',
+            'cliente_nome' => 'Cliente',
+            'cliente_telefone' => '11977777777',
             'tipo' => 'entrega',
             'valor_total' => 0.00,
         ]);
 
-        $produto->update(['preco' => 15.00]);
+        // Preço do produto muda depois
+        $produto->update(['preco' => 6.00]);
 
         $item = PedidoItem::create([
             'pedido_id' => $pedido->id,
             'produto_id' => $produto->id,
             'quantidade' => 2,
-            'preco_unitario' => 10.00,
+            'preco_unitario' => 5.00, // Preço no momento da venda
         ]);
 
-        $this->assertEquals(10.00, $item->preco_unitario);
-        $this->assertEquals(20.00, $item->subtotal);
+        // O preço unitário deve permanecer 5.00 mesmo que o produto mude para 6.00
+        $this->assertEquals(5.00, $item->preco_unitario);
+        $this->assertNotEquals($produto->preco, $item->preco_unitario); // 6.00 != 5.00
     }
 
     #[Test]
     public function atualiza_estoque_do_produto_ao_criar_item()
     {
+        $estoqueInicial = 10;
         $produto = Produto::create([
-            'nome' => 'Coxinha de Frango',
-            'descricao' => 'Coxinha tradicional',
-            'preco' => 5.50,
-            'estoque' => 10,
+            'nome' => 'Risole',
+            'preco' => 4.50,
+            'estoque' => $estoqueInicial,
             'disponivel' => true,
             'categoria' => 'salgados',
         ]);
 
         $pedido = Pedido::create([
-            'cliente_nome' => 'João Silva',
-            'cliente_telefone' => '11999999999',
+            'cliente_nome' => 'Cliente',
+            'cliente_telefone' => '11966666666',
             'tipo' => 'entrega',
             'valor_total' => 0.00,
         ]);
 
-        $initialStock = $produto->estoque;
-
+        $quantidadeComprada = 3;
         $item = PedidoItem::create([
             'pedido_id' => $pedido->id,
             'produto_id' => $produto->id,
-            'quantidade' => 3,
-            'preco_unitario' => 5.50,
+            'quantidade' => $quantidadeComprada,
+            'preco_unitario' => 4.50,
         ]);
 
+        // Atualizar produto para pegar estoque atualizado
         $produto->refresh();
 
-        $this->assertEquals($initialStock - 3, $produto->estoque);
+        $estoqueEsperado = $estoqueInicial - $quantidadeComprada; // 10 - 3 = 7
+        $this->assertEquals($estoqueEsperado, $produto->estoque);
+    }
+
+    #[Test]
+    public function valida_quantidade_positiva()
+    {
+        $produto = Produto::create([
+            'nome' => 'Bolinha de Queijo',
+            'preco' => 3.50,
+            'estoque' => 5,
+            'disponivel' => true,
+            'categoria' => 'salgados',
+        ]);
+
+        $pedido = Pedido::create([
+            'cliente_nome' => 'Cliente',
+            'cliente_telefone' => '11955555555',
+            'tipo' => 'retirada',
+            'valor_total' => 0.00,
+        ]);
+
+        // Não deve aceitar quantidade zero ou negativa
+        $this->expectException(\Illuminate\Database\QueryException::class);
+        
+        PedidoItem::create([
+            'pedido_id' => $pedido->id,
+            'produto_id' => $produto->id,
+            'quantidade' => 0, // Quantidade inválida
+            'preco_unitario' => 3.50,
+        ]);
     }
 }

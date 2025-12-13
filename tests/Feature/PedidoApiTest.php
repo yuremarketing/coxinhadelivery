@@ -6,12 +6,13 @@ use Tests\TestCase;
 use App\Models\Produto;
 use App\Models\Pedido;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 
 class PedidoApiTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    #[Test]
     public function pode_criar_um_pedido_via_api()
     {
         $produto = Produto::create([
@@ -53,7 +54,7 @@ class PedidoApiTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function nao_pode_criar_pedido_com_produto_sem_estoque()
     {
         $produto = Produto::create([
@@ -81,7 +82,7 @@ class PedidoApiTest extends TestCase
         $response->assertStatus(500); // API retorna erro interno quando validação falha
     }
 
-    /** @test */
+    #[Test]
     public function nao_pode_criar_pedido_com_produto_indisponivel()
     {
         $produto = Produto::create([
@@ -108,7 +109,7 @@ class PedidoApiTest extends TestCase
         $response->assertStatus(500); // API retorna erro interno quando validação falha
     }
 
-    /** @test */
+    #[Test]
     public function pode_buscar_pedido_por_codigo()
     {
         $pedido = Pedido::create([
@@ -139,7 +140,7 @@ class PedidoApiTest extends TestCase
                  ->assertJsonPath('data.status', 'pendente');
     }
 
-    /** @test */
+    #[Test]
     public function retorna_404_quando_pedido_nao_existe()
     {
         $response = $this->getJson('/api/pedidos/CX999999999999');
@@ -147,7 +148,7 @@ class PedidoApiTest extends TestCase
         $response->assertStatus(404);
     }
 
-    /** @test */
+    #[Test]
     public function admin_pode_listar_pedidos()
     {
         Pedido::create([
@@ -175,7 +176,7 @@ class PedidoApiTest extends TestCase
                  ]);
     }
 
-    /** @test */
+    #[Test]
     public function admin_pode_atualizar_status_do_pedido()
     {
         $pedido = Pedido::create([
@@ -205,7 +206,7 @@ class PedidoApiTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function nao_pode_atualizar_para_status_invalido()
     {
         $pedido = Pedido::create([

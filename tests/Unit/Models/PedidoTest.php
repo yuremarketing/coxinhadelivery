@@ -5,6 +5,7 @@ namespace Tests\Unit\Models;
 use Tests\TestCase;
 use App\Models\Pedido;
 use App\Models\PedidoItem;
+use PHPUnit\Framework\Attributes\Test;
 use App\Models\Produto;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -12,7 +13,7 @@ class PedidoTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    #[Test]
     public function pode_criar_um_pedido()
     {
         $pedido = Pedido::create([
@@ -32,7 +33,7 @@ class PedidoTest extends TestCase
         $this->assertStringStartsWith('CX', $pedido->numero_pedido);
     }
 
-    /** @test */
+    #[Test]
     public function gera_numero_pedido_unico_automaticamente()
     {
         $pedido1 = Pedido::create([
@@ -54,7 +55,7 @@ class PedidoTest extends TestCase
         $this->assertMatchesRegularExpression('/^CX\d{12}$/', $pedido2->numero_pedido);
     }
 
-    /** @test */
+    #[Test]
     public function numero_pedido_tem_formato_correto_CX_ano_mes_dia_sequencia()
     {
         $pedido = Pedido::create([
@@ -70,7 +71,7 @@ class PedidoTest extends TestCase
         $this->assertEquals(date('Ymd'), substr($pedido->numero_pedido, 2, 8));
     }
 
-    /** @test */
+    #[Test]
     public function pedido_pode_ter_itens()
     {
         $produto = Produto::create([
@@ -99,7 +100,7 @@ class PedidoTest extends TestCase
         $this->assertEquals('Coxinha', $pedido->itens->first()->produto->nome);
     }
 
-    /** @test */
+    #[Test]
     public function calcula_valor_total_corretamente()
     {
         $produto1 = Produto::create([
@@ -146,7 +147,7 @@ class PedidoTest extends TestCase
         $this->assertEquals(15.00, $valorTotal); // 11.00 + 4.00 = 15.00
     }
 
-    /** @test */
+    #[Test]
     public function status_pode_ser_atualizado()
     {
         $pedido = Pedido::create([
@@ -164,7 +165,7 @@ class PedidoTest extends TestCase
         $this->assertEquals('em_preparo', $pedido->status);
     }
 
-    /** @test */
+    #[Test]
     public function possui_status_validos()
     {
         $pedido = Pedido::create([
@@ -182,7 +183,7 @@ class PedidoTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function tipo_pode_ser_entrega_ou_retirada()
     {
         $pedidoEntrega = Pedido::create([
