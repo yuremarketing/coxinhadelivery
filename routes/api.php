@@ -1,12 +1,9 @@
 <?php
 
-// Importa a classe Route do Laravel
-// Permite definir endpoints da API
 use Illuminate\Support\Facades\Route;
-
-// Importa os controllers que criamos
 use App\Http\Controllers\API\ProdutoController;
 use App\Http\Controllers\API\PedidoController;
+use App\Http\Controllers\API\AuthController;
 
 /*
 |--------------------------------------------------------------------------
@@ -28,6 +25,15 @@ Route::get('/health', function () {
         'timestamp' => now()->toDateTimeString(),
         'environment' => app()->environment()
     ]);
+});
+
+// Rotas de autenticação (públicas)
+Route::prefix('auth')->group(function () {
+    // POST /api/auth/register - Registrar novo usuário
+    Route::post('/register', [AuthController::class, 'register']);
+    
+    // POST /api/auth/login - Login de usuário
+    Route::post('/login', [AuthController::class, 'login']);
 });
 
 // Grupo de rotas para produtos (públicas - qualquer um pode acessar)
@@ -53,9 +59,20 @@ Route::prefix('pedidos')->group(function () {
     Route::get('/{codigo}', [PedidoController::class, 'show']);
 });
 
-// Grupo de rotas protegidas (apenas para administradores)
-// Essas rotas precisarão de autenticação no futuro
+// Grupo de rotas protegidas (autenticadas com Sanctum)
 Route::middleware(['auth:sanctum'])->group(function () {
+    
+    // Rotas de autenticação protegidas
+    Route::prefix('auth')->group(function () {
+        // POST /api/auth/logout - Logout do usuário
+        Route::post('/logout', [AuthController::class, 'logout']);
+        
+        // GET /api/auth/me - Obter dados do usuário autenticado
+        Route::get('/me', [AuthController::class, 'me']);
+        
+        // PUT /api/auth/me - Atualizar perfil do usuário
+        Route::put('/me', [AuthController::class, 'updateProfile']);
+    });
     
     // Rotas de administração de produtos
     Route::prefix('admin/produtos')->group(function () {
@@ -77,6 +94,6 @@ Route::fallback(function () {
     return response()->json([
         'success' => false,
         'message' => 'Endpoint não encontrado',
-        'documentation' => '/api/documentation' // Podemos adicionar docs depois
+        'documentation' => '/api/documentation'
     ], 404);
 });
