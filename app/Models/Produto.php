@@ -10,13 +10,23 @@ class Produto extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['nome', 'descricao', 'preco', 'categoria', 'estoque', 'disponivel', 'imagem'];
+    protected $fillable = [
+        'nome', 'descricao', 'preco', 'categoria', 'estoque', 'disponivel', 'imagem'
+    ];
+
+    // O FISCAL ENTRA AQUI:
+    // Isso garante que o Laravel converta os valores vindo do banco para os tipos certos
+    protected $casts = [
+        'preco' => 'double',
+        'estoque' => 'integer',
+        'disponivel' => 'boolean',
+    ];
 
     protected function imagemUrl(): Attribute
     {
         return Attribute::get(function () {
             if (!$this->imagem) return null;
-            // Retorna o link completo usando a função asset()
+            if (filter_var($this->imagem, FILTER_VALIDATE_URL)) return $this->imagem;
             return asset($this->imagem);
         });
     }
