@@ -15,18 +15,15 @@ class IsAdmin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Verifica se o usuário está autenticado
-        if (!$request->user()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Não autenticado'
-            ], 401);
+        // Verifica se o usuário está logado E se a coluna is_admin é verdadeira
+        if ($request->user() && $request->user()->is_admin) {
+            return $next($request);
         }
 
-        // TODO: Adicionar lógica para verificar se o usuário é admin
-        // Por enquanto, vamos permitir qualquer usuário autenticado
-        // No futuro, podemos adicionar um campo 'is_admin' na tabela users
-        
-        return $next($request);
+        // Se não for admin, retorna erro 403 (Proibido)
+        return response()->json([
+            'success' => false,
+            'message' => 'Acesso negado. Esta rota é restrita a administradores.'
+        ], 403);
     }
 }
