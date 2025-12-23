@@ -6,14 +6,8 @@ use App\Http\Controllers\API\PedidoController;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Middleware\IsAdmin;
 
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-*/
-
-Route::get('/health', function () {
-    return response()->json(['status' => 'online']);
+Route::get('/health', function () { 
+    return response()->json(['status' => 'online']); 
 });
 
 Route::prefix('auth')->group(function () {
@@ -39,6 +33,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::put('/me', [AuthController::class, 'updateProfile']);
     });
     
+    // TODAS as rotas de admin agora estão protegidas aqui dentro
     Route::middleware([IsAdmin::class])->prefix('admin/produtos')->group(function () {
         Route::post('/', [ProdutoController::class, 'store']);
         Route::put('/{id}', [ProdutoController::class, 'update'])->where('id', '[0-9]+');
@@ -52,6 +47,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
     });
 });
 
-Route::fallback(function () {
-    return response()->json(['message' => 'Endpoint nao encontrado'], 404);
+Route::fallback(function () { 
+    return response()->json(['message' => 'Endpoint nao encontrado'], 404); 
 });
