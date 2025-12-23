@@ -27,7 +27,7 @@ class Produto extends Model
     /**
      * Nome da tabela no banco de dados
      * Laravel assume automaticamente "produtos" (plural do nome da classe)
-     * PONTO DE ESSTUDO, SABER A DIFERENÇA DE MODEL PRA TABELA, muda o jogo... vamos nessa!!*/
+     * PONTO DE ESSTUDO, SABER A DIFERENÇA DE MODEL (negócio) PRA TABELA, muda o jogo... vamos nessa!!*/
     protected $table = 'produtos';
 
     /**
@@ -40,9 +40,13 @@ class Produto extends Model
         'descricao',
         'preco',
         'categoria',
-        'imagem',
+        'imagem',  /**Guarda o caminho físico interno (ex: uploads/foto.jpg), 
+        usado quando você precisa deletar ou editar o arquivo. */
         'disponivel',
-        'estoque'
+        'estoque',
+        'imagem_url' /**Guarda o link completo para a internet 
+        (ex: https://meusite.com/uploads/foto.jpg), usado para 
+        exibir a foto no site ou app mais facilmente. */
     ];
 
     /**

@@ -146,7 +146,8 @@ class ProdutoController extends Controller
                 'preco' => 'required|numeric|min:0|max:999999.99',
                 'categoria' => 'required|string|max:50',
                 'estoque' => 'required|integer|min:0',
-                'disponivel' => 'boolean'
+                'disponivel' => 'boolean',
+                'imagem' => 'nullable|image|max:2048'
             ];
 
             // Cria validador com regras e mensagens personalizadas
@@ -166,7 +167,21 @@ class ProdutoController extends Controller
             }
 
             // Cria produto com dados validados
-            $produto = Produto::create($validador->validated());
+            //$produto = Produto::create($validador->validated());
+            // 1. Pega os dados que passaram na validação
+            $dados = $validador->validated();
+
+            // 2. Verifica e Salva a Imagem
+            if ($request->hasFile('imagem')) {
+                // Salva na pasta 'storage/app/public/produtos'
+                $caminhoImagem = $request->file('imagem')->store('produtos', 'public');
+                
+                // Adiciona o caminho ao array de dados
+                $dados['imagem'] = $caminhoImagem;
+            }
+
+            // 3. Cria produto com os dados finais (incluindo a imagem se houver)
+            $produto = Produto::create($dados);
 
             // Retorna resposta de sucesso com produto criado
             return response()->json([
