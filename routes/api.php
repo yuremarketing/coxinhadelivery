@@ -1,52 +1,57 @@
 <?php
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\API\ProdutoController;
-use App\Http\Controllers\API\PedidoController;
 use App\Http\Controllers\API\AuthController;
-use App\Http\Middleware\IsAdmin;
+use App\Http\Controllers\API\PedidoController;
+use App\Http\Controllers\API\LojaConfigController;
 
-Route::get('/health', function () { 
-    return response()->json(['status' => 'online']); 
-});
+/*
+|--------------------------------------------------------------------------
+| ROTAS PÚBLICAS (Acesso Livre)
+|--------------------------------------------------------------------------
+*/
 
-Route::prefix('auth')->group(function () {
-    Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/login', [AuthController::class, 'login']);
-});
+// Cadastro e Login
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
 
-Route::prefix('produtos')->group(function () {
-    Route::get('/', [ProdutoController::class, 'index']);
-    Route::get('/{id}', [ProdutoController::class, 'show'])->where('id', '[0-9]+');
-    Route::get('/categorias', [ProdutoController::class, 'categorias']);
-});
+// O App consulta isso antes de qualquer coisa pra saber se a loja tá on
+Route::get('/loja-config', [LojaConfigController::class, 'index']);
 
-Route::prefix('pedidos')->group(function () {
-    Route::post('/', [PedidoController::class, 'store']);
-    Route::get('/{codigo}', [PedidoController::class, 'show']);
-});
+/*
+|--------------------------------------------------------------------------
+| ROTAS PROTEGIDAS (Precisa de Login - Token Sanctum)
+|--------------------------------------------------------------------------
+*/
+Route::middleware('auth:sanctum')->group(function () {
 
-Route::middleware(['auth:sanctum'])->group(function () {
-    Route::prefix('auth')->group(function () {
-        Route::post('/logout', [AuthController::class, 'logout']);
-        Route::get('/me', [AuthController::class, 'me']);
-        Route::put('/me', [AuthController::class, 'updateProfile']);
+    // Sair do sistema
+    Route::post('/logout', [AuthController::class, 'logout']);
+
+    // Ver meus dados
+    Route::get('/user', function (Request $request) {
+        return $request->user();
     });
-    
-    // TODAS as rotas de admin agora estão protegidas aqui dentro
-    Route::middleware([IsAdmin::class])->prefix('admin/produtos')->group(function () {
-        Route::post('/', [ProdutoController::class, 'store']);
-        Route::put('/{id}', [ProdutoController::class, 'update'])->where('id', '[0-9]+');
-        Route::delete('/{id}', [ProdutoController::class, 'destroy'])->where('id', '[0-9]+');
-    });
-    
-    Route::middleware([IsAdmin::class])->prefix('admin/pedidos')->group(function () {
-        Route::get('/', [PedidoController::class, 'index']);
-        Route::put('/{id}/status', [PedidoController::class, 'updateStatus']);
-        Route::get('/{id}', [PedidoController::class, 'adminShow'])->where('id', '[0-9]+');
-    });
-});
 
-Route::fallback(function () { 
-    return response()->json(['message' => 'Endpoint nao encontrado'], 404); 
+    /*
+    |--------------------------------------------------------------------------
+    | ÁREA DA EQUIPE (Admin e Funcionários)
+    |--------------------------------------------------------------------------
+    | O Middleware 'is_admin' controla quem faz o quê aqui dentro.
+    */
+    Route::middleware('is_admin')->group(function () {
+        
+        // Dashboard Financeiro (Bloqueado para funcionários no Middleware)
+        Route::get('/admin/dashboard', [PedidoController::class, 'dashboard']);
+
+        // Configurações da Loja (Atualizar Link YouTube / Abrir e Fechar)
+        Route::put('/admin/loja-config', [LojaConfigController::class, 'update']);
+
+        // Rotas de Pedidos (Listar, Criar, Atualizar)
+        Route::apiResource('pedidos', PedidoController::class);
+        
+        // Rota específica para mudar status (Cozinha -> Entrega)
+        Route::patch('/pedidos/{id}/status', [PedidoController::class, 'updateStatus']);
+    });
 });
