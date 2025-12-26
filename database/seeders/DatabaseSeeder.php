@@ -3,23 +3,35 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\Funcionario; // Importando o modelo para criar o motoboy
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
     /**
-     * Seed the application's database.
+     * Onde a mágica acontece.
+     * Comentário: Chamo os seeders específicos aqui para manter o código modular.
      */
     public function run(): void
     {
-         User::factory(10)->create();
-
+        // 1. Criar o usuário admin (Pra você conseguir logar depois)
         User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+            'name' => 'Yuri Admin',
+            'email' => 'admin@coxinha.com',
+            'password' => bcrypt('admin123'),
+        ]);
+
+        // 2. Criar um Motoboy inicial (Indispensável para o fluxo de entrega)
+        Funcionario::create([
+            'nome' => 'Marcio Motoca',
+            'cargo' => 'ENTREGADOR',
+            'telefone' => '11999999999',
+            'placa_veiculo' => 'COX-2025'
+        ]);
+
+        // 3. Chamar o seu Seeder de Produtos que já existe no projeto
+        $this->call([
+            ProdutosSeeder::class,
         ]);
     }
 }
