@@ -2,20 +2,19 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PedidoController;
-use App\Models\Pedido;
+use App\Http\Controllers\Admin\ProdutoController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\PedidoController as AdminPedidoController;
 
-// Frente de Loja
-Route::get('/', [PedidoController::class, 'create'])->name('pedidos.create');
-Route::post('/pedidos', [PedidoController::class, 'store'])->name('pedidos.store');
+Route::get('/', [PedidoController::class, 'vender'])->name('vender');
 
-// Cozinha
-Route::get('/admin/pedidos', function () {
-    $pedidos = Pedido::where('status', 'pendente')->with('itens.produto')->get();
-    return view('admin.pedidos.cozinha', compact('pedidos'));
-})->name('admin.pedidos.index');
+Route::prefix('admin')->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+    Route::resource('produtos', ProdutoController::class);
+    
+    // Rota da Cozinha e a rota de Concluir com o nome correto
+    Route::get('/pedidos', [AdminPedidoController::class, 'cozinha'])->name('admin.pedidos.cozinha');
+    Route::patch('/pedidos/{pedido}/concluir', [AdminPedidoController::class, 'concluir'])->name('pedidos.concluir');
+});
 
-Route::post('/admin/pedidos/{id}/status', function ($id) {
-    $pedido = Pedido::findOrFail($id);
-    $pedido->update(['status' => 'concluido']);
-    return back();
-})->name('admin.pedidos.status');
+require __DIR__.'/auth.php';
