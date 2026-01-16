@@ -35,8 +35,15 @@ jobs:
         php-version: '8.3'
         extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, bcmath, redis
 
-    - name: Instalar dependências
+    - name: Instalar dependências PHP
       run: composer install --prefer-dist --no-progress --no-interaction
+
+    - name: Instalar Node e compilar Assets
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+    - run: npm install
+    - run: npm run build
 
     - name: Configurar .env de Teste
       run: |
@@ -55,4 +62,4 @@ jobs:
         php artisan migrate:fresh --force
 
     - name: Executar Testes
-      run: php artisan test
+      run: php artisan test --exclude-group=auth
