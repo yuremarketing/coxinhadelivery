@@ -5,7 +5,8 @@
     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
         <h2 class="text-xl font-bold text-gray-800 mb-4">Itens Disponíveis</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            @foreach(\App\Models\Produto::where('ativo', true)->get() as $produto)
+            {{-- CORREÇÃO FEITA AQUI: Agora usa a variável que veio do Controller --}}
+            @foreach($produtos as $produto)
                 <button type="button" 
                     onclick="adicionarAoCarrinho({{ $produto->id }}, '{{ $produto->nome }}', {{ $produto->preco }})"
                     class="flex justify-between items-center p-4 border rounded-xl hover:bg-orange-50 hover:border-orange-200 transition group text-left">

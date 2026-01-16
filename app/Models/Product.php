@@ -4,8 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Produto extends Model
+class Product extends Model
 {
-    // O 'fillable' diz ao Laravel que esses campos podem ser gravados no banco
+    protected $table = 'produtos';
+
     protected $fillable = ['nome', 'preco', 'imagem'];
 }

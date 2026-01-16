@@ -18,17 +18,17 @@ Route::prefix('api')->group(function () {
         ]);
     });
     
-    // Produtos
-    Route::get('/produtos', [\App\Http\Controllers\API\ProdutoController::class, 'index']);
-    Route::get('/produtos/{id}', [\App\Http\Controllers\API\ProdutoController::class, 'show']);
-    Route::get('/produtos/categorias', [\App\Http\Controllers\API\ProdutoController::class, 'categorias']);
+    // Products
+    Route::get('/produtos', [\App\Http\Controllers\API\ProductController::class, 'index']);
+    Route::get('/produtos/{id}', [\App\Http\Controllers\API\ProductController::class, 'show']);
+    Route::get('/produtos/categorias', [\App\Http\Controllers\API\ProductController::class, 'categorias']);
     
-    // Pedidos (clientes)  ← MOVER DENTRO DO GRUPO
-    Route::post('/pedidos', [\App\Http\Controllers\API\PedidoController::class, 'store']);
-    Route::get('/pedidos/{codigo}', [\App\Http\Controllers\API\PedidoController::class, 'show']);
+    // Orders (clientes)  ← MOVER DENTRO DO GRUPO
+    Route::post('/pedidos', [\App\Http\Controllers\API\OrderController::class, 'store']);
+    Route::get('/pedidos/{codigo}', [\App\Http\Controllers\API\OrderController::class, 'show']);
     
-    // Admin Pedidos (sem auth por enquanto)
-    Route::get('/admin/pedidos', [\App\Http\Controllers\API\PedidoController::class, 'index']);
-    Route::put('/admin/pedidos/{id}/status', [\App\Http\Controllers\API\PedidoController::class, 'updateStatus']);
-    Route::get('/admin/pedidos/{id}', [\App\Http\Controllers\API\PedidoController::class, 'adminShow']);
+    // Admin Orders (sem auth por enquanto)
+    Route::get('/admin/pedidos', [\App\Http\Controllers\API\OrderController::class, 'index']);
+    Route::put('/admin/pedidos/{id}/status', [\App\Http\Controllers\API\OrderController::class, 'updateStatus']);
+    Route::get('/admin/pedidos/{id}', [\App\Http\Controllers\API\OrderController::class, 'adminShow']);
 }); // ← Este fecha o grupo prefix('api')

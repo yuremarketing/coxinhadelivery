@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -12,33 +13,36 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
 
     /**
-     * Aqui eu listei o que pode ser preenchido no cadastro. 
-     * Tirei o 'is_admin' e coloquei o 'role', porque agora é esse campo 
-     * que define se o cara é cliente, patrão ou quem frita o salgado.
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
      */
     protected $fillable = [
         'name',
         'email',
         'password',
-        'role',
+        'role',      // Já tínhamos adicionado
+        'google_id', // NOVO: ID do Google
+        'avatar',    // NOVO: Foto do Google
     ];
 
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var array<int, string>
+     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
-
-    /**
-     * Criei essa funçãozinha pra não ter que ficar escrevendo regra toda hora.
-     * Se eu perguntar 'é admin?', ela já me responde direto olhando o cargo.
-     */
-    public function isAdmin(): bool
-    {
-        return $this->role === 'admin';
-    }
 }

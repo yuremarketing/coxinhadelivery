@@ -1,106 +1,81 @@
-@extends('layouts.monitor')
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor da Cozinha 👨‍🍳</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <meta http-equiv="refresh" content="30"> </head>
+<body class="bg-gray-900 text-white p-6">
 
-@section('content')
-<div class="container mx-auto p-6" 
-    x-data="{ 
-        somAtivado: localStorage.getItem('cozinha_som') === 'true',
-        precisaInteragir: true,
-        pedidosCount: {{ $pedidos->count() }},
-        agora: new Date(),
-        
-        liberarAudio() {
-            let audio = new Audio('/mammamia.mp3');
-            audio.play().then(() => {
-                audio.pause();
-                audio.currentTime = 0;
-                this.precisaInteragir = false;
-            }).catch(() => {
-                this.precisaInteragir = true;
-            });
-        },
-
-        tocarSom() {
-            if (this.somAtivado) {
-                new Audio('/mammamia.mp3').play().catch(() => { this.precisaInteragir = true; });
-            }
-        },
-
-        // Função para calcular o tempo de espera
-        tempoDecorrido(criadoEm) {
-            let inicio = new Date(criadoEm);
-            let diff = Math.floor((this.agora - inicio) / 60000); // Diferença em minutos
-            if (diff < 1) return 'Agora mesmo';
-            return 'Há ' + diff + ' min';
-        },
-
-        verificarNovosPedidos() {
-            this.agora = new Date(); // Atualiza o relógio interno
-            fetch(window.location.href)
-                .then(response => response.text())
-                .then(html => {
-                    let parser = new DOMParser();
-                    let doc = parser.parseFromString(html, 'text/html');
-                    let novoCount = doc.querySelectorAll('.pedido-card').length;
-                    if (novoCount > this.pedidosCount) {
-                        this.tocarSom();
-                    }
-                    document.getElementById('lista-pedidos').innerHTML = doc.getElementById('lista-pedidos').innerHTML;
-                    this.pedidosCount = novoCount;
-                });
-        }
-    }" 
-    x-init="liberarAudio(); setInterval(() => verificarNovosPedidos(), 5000)"
-    @click="liberarAudio()">
-
-    <template x-if="precisaInteragir && somAtivado">
-        <div class="bg-red-600 text-white text-center p-4 rounded-b-2xl animate-pulse font-black uppercase mb-6 cursor-pointer">
-            ⚠️ O NAVEGADOR BLOQUEOU O SOM. CLIQUE AQUI PARA OUVIR O MAMMA MIA!
+    <div class="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
+        <div>
+            <h1 class="text-4xl font-black text-yellow-400 uppercase tracking-widest">Cozinha</h1>
+            <p class="text-gray-400 mt-1">Monitor de Preparo em Tempo Real</p>
         </div>
-    </template>
-
-    <div class="flex justify-between items-center mb-8 bg-white p-6 rounded-2xl shadow-sm border-2" :class="somAtivado ? 'border-green-200' : 'border-slate-200'">
-        <h1 class="text-3xl font-black text-slate-800 uppercase">Fila de Produção</h1>
-        
-        <button 
-            @click.stop="somAtivado = !somAtivado; localStorage.setItem('cozinha_som', somAtivado); if(somAtivado) liberarAudio()" 
-            :class="somAtivado ? 'bg-green-600' : 'bg-slate-400'"
-            class="text-white px-8 py-4 rounded-2xl font-black transition-all shadow-lg flex items-center gap-3"
-        >
-            <span x-text="somAtivado ? '✅ SOM LIGADO' : '🔈 SOM DESLIGADO'"></span>
-        </button>
+        <div class="text-right">
+            <div class="text-3xl font-bold" id="relogio">--:--</div>
+            <div class="text-sm text-gray-500">Atualização Automática</div>
+        </div>
     </div>
 
-    <div id="lista-pedidos" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        @forelse($pedidos as $pedido)
-            <div class="pedido-card bg-white p-6 rounded-3xl shadow-xl border-4 border-slate-100 flex flex-col justify-between" 
-                 data-criado="{{ $pedido->created_at }}">
-                <div>
-                    <div class="flex justify-between items-start mb-4">
-                        <span class="bg-slate-100 text-slate-800 px-3 py-1 rounded-full text-xs font-black">#{{ substr($pedido->numero_pedido, -5) }}</span>
-                        <span class="text-orange-600 font-bold text-xs" x-text="tempoDecorrido('{{ $pedido->created_at }}')"></span>
-                    </div>
-                    <h2 class="text-2xl font-black text-slate-800 uppercase leading-none mb-2">{{ $pedido->cliente_nome }}</h2>
-                    <p class="text-slate-500 font-bold uppercase text-xs tracking-widest mb-4">Pedido:</p>
-                    <div class="bg-slate-50 rounded-2xl p-4 border-2 border-slate-100">
-                        @foreach($pedido->itens as $item)
-                            <p class="font-black text-slate-700 uppercase">{{ $item->produto->nome }}</p>
-                        @endforeach
-                    </div>
-                </div>
+    @if(session('success'))
+        <div class="bg-green-600 text-white p-4 rounded-lg mb-6 text-center font-bold text-xl animate-bounce">
+            ✅ {{ session('success') }}
+        </div>
+    @endif
+
+    @if($pedidos->isEmpty())
+        <div class="flex flex-col items-center justify-center h-96 text-gray-600">
+            <svg class="w-24 h-24 mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <p class="text-2xl font-light">Tudo tranquilo por aqui...</p>
+            <p class="text-sm">Aguardando novos pedidos.</p>
+        </div>
+    @else
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            @foreach($pedidos as $pedido)
+            <div class="bg-gray-800 rounded-2xl overflow-hidden border-l-8 {{ $pedido->status == 'preparando' ? 'border-yellow-500' : 'border-red-500' }} shadow-2xl relative">
                 
-                <form action="{{ route('pedidos.concluir', $pedido->id) }}" method="POST" class="mt-6">
-                    @csrf
-                    @method('PATCH')
-                    <button class="w-full bg-green-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-green-700 transition-all shadow-lg shadow-green-100">
-                        CONCLUIR
-                    </button>
-                </form>
+                <div class="p-4 bg-gray-800 border-b border-gray-700 flex justify-between items-center">
+                    <span class="font-mono text-2xl font-bold text-gray-400">#{{ $pedido->numero }}</span>
+                    <span class="px-3 py-1 rounded-full text-xs font-bold uppercase {{ $pedido->status == 'preparando' ? 'bg-yellow-900 text-yellow-300' : 'bg-red-900 text-red-300' }}">
+                        {{ $pedido->status }}
+                    </span>
+                </div>
+
+                <div class="p-6">
+                    <h2 class="text-2xl font-black text-white mb-2 leading-tight">
+                        {{ $pedido->produto ? $pedido->produto->nome : 'Produto Removido' }}
+                    </h2>
+                    <p class="text-gray-400 text-sm mb-4">
+                        Cliente: <strong class="text-white">{{ $pedido->cliente }}</strong>
+                    </p>
+                    <p class="text-xs text-gray-500 font-mono">
+                        Recebido às: {{ $pedido->created_at->format('H:i') }}
+                    </p>
+                </div>
+
+                <div class="p-4 bg-gray-900/50">
+                    <form action="{{ route('pedidos.concluir', $pedido->id) }}" method="POST">
+                        @csrf
+                        @method('PATCH')
+                        <button type="submit" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl transition transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2">
+                            <span>Concluir Pedido</span>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        </button>
+                    </form>
+                </div>
             </div>
-        @empty
-            <div class="col-span-full text-center py-20 bg-white rounded-3xl border-4 border-dashed border-slate-200">
-                <p class="text-slate-300 font-black text-2xl uppercase">Aguardando pedidos...</p>
-            </div>
-        @endforelse
-    </div>
-</div>
-@endsection
+            @endforeach
+        </div>
+    @endif
+
+    <script>
+        // Relógio simples
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('relogio').innerText = now.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+        }, 1000);
+    </script>
+</body>
+</html>

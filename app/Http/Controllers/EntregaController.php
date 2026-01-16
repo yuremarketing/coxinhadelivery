@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Pedido;
+use App\Models\Order;
 use Illuminate\Http\Request;
 
 class EntregaController extends Controller
@@ -17,7 +17,7 @@ class EntregaController extends Controller
     public function show($hash)
     {
         // Procuro o pedido que tem esse hash específico
-        $pedido = Pedido::where('hash_entrega', $hash)->firstOrFail();
+        $pedido = Order::where('hash_entrega', $hash)->firstOrFail();
 
         // Mando para a tela de visualização do motoboy
         return view('entrega.show', compact('pedido'));

@@ -3,14 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Produto;
+use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class ProdutoController extends Controller
 {
     public function index() {
-        $produtos = Produto::all();
+        $produtos = Product::all();
         return view('admin.produtos.index', compact('produtos'));
     }
 
@@ -25,15 +25,15 @@ class ProdutoController extends Controller
             $dados['imagem'] = $request->file('imagem')->store('produtos', 'public');
         }
 
-        Produto::create($dados);
-        return back()->with('sucesso', 'Produto adicionado com foto!');
+        Product::create($dados);
+        return back()->with('sucesso', 'Product adicionado com foto!');
     }
 
-    public function destroy(Produto $produto) {
+    public function destroy(Product $produto) {
         if ($produto->imagem) {
             Storage::disk('public')->delete($produto->imagem);
         }
         $produto->delete();
-        return back()->with('sucesso', 'Produto removido!');
+        return back()->with('sucesso', 'Product removido!');
     }
 }

@@ -3,17 +3,17 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use App\Models\Produto;
+use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\File;
 
-class ProdutoController extends Controller
+class ProductController extends Controller
 {
     public function index(): JsonResponse
     {
-        $produtos = Produto::all();
+        $produtos = Product::all();
         return response()->json(['success' => true, 'data' => $produtos]);
     }
 
@@ -41,9 +41,9 @@ class ProdutoController extends Controller
                 $dados['imagem'] = 'uploads/produtos/' . $nomeArquivo;
             }
 
-            $produto = Produto::create($dados);
+            $produto = Product::create($dados);
 
-            return response()->json(['success' => true, 'message' => 'Produto criado', 'data' => $produto], 201);
+            return response()->json(['success' => true, 'message' => 'Product criado', 'data' => $produto], 201);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
@@ -51,7 +51,7 @@ class ProdutoController extends Controller
 
     public function update(Request $request, $id): JsonResponse
     {
-        $produto = Produto::find($id);
+        $produto = Product::find($id);
         if (!$produto) return response()->json(['success' => false, 'message' => 'Não encontrado'], 404);
 
         $dados = $request->all();
@@ -69,12 +69,12 @@ class ProdutoController extends Controller
 
         $produto->update($dados);
 
-        return response()->json(['success' => true, 'message' => 'Produto atualizado', 'data' => $produto]);
+        return response()->json(['success' => true, 'message' => 'Product atualizado', 'data' => $produto]);
     }
 
     public function destroy($id): JsonResponse
     {
-        $produto = Produto::find($id);
+        $produto = Product::find($id);
         if (!$produto) return response()->json(['success' => false, 'message' => 'Não encontrado'], 404);
 
         if ($produto->imagem && File::exists(public_path($produto->imagem))) {
@@ -82,6 +82,6 @@ class ProdutoController extends Controller
         }
 
         $produto->delete();
-        return response()->json(['success' => true, 'message' => 'Produto e imagem removidos']);
+        return response()->json(['success' => true, 'message' => 'Product e imagem removidos']);
     }
 }

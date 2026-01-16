@@ -1,37 +1,35 @@
 import './bootstrap';
-import React from 'react';
+import '../css/app.css';
+import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
-/**
- * ARQUIVO DE ENTRADA DO REACT (O Big Bang)
- * ---------------------------------------------------
- * Eu configurei este arquivo para ser o ponto de partida do Frontend.
- * O Laravel carrega este script, e este script carrega todo o resto do site.
- */
+const App = () => {
+    const [coxinhas, setCoxinhas] = useState([]);
 
-function App() {
+    // Este useEffect vai buscar os dados da sua API assim que a tela carregar
+    useEffect(() => {
+        fetch('/api/coxinhas') // Ajuste para a sua rota real de API
+            .then(res => res.json())
+            .then(data => setCoxinhas(data))
+            .catch(err => console.log("Aguardando API...", err));
+    }, []);
+
     return (
-        // Decidi usar estilos inline provisórios só pra validar a instalação.
-        // O Designer (ou eu mesmo) vai tirar isso depois e usar CSS de verdade.
-        <div style={{ textAlign: 'center', marginTop: '50px', fontFamily: 'Arial' }}>
-            <h1>🍗 Coxinha Delivery</h1>
-            <p>Status do Sistema: O React assumiu o controle do navegador!</p>
-            <small>Se você está lendo isso, a integração Laravel + Vite + React funcionou.</small>
+        <div style={{ backgroundColor: '#ff9800', minHeight: '100vh', color: 'white', padding: '20px', textAlign: 'center' }}>
+            <h1>🚀 Coxinha Delivery - Painel de Controle</h1>
+            <div style={{ background: 'white', color: 'black', padding: '20px', borderRadius: '15px', display: 'inline-block' }}>
+                <h3>Lista de Pedidos (API)</h3>
+                {coxinhas.length > 0 ? (
+                    <ul>
+                        {coxinhas.map(c => <li key={c.id}>{c.nome}</li>)}
+                    </ul>
+                ) : (
+                    <p>Conectado ao motor! Buscando dados da API...</p>
+                )}
+            </div>
         </div>
     );
-}
+};
 
-// LÓGICA DE MONTAGEM (The Mounting Logic)
-// ----------------------------------------
-// Eu procuro no HTML principal (welcome.blade.php) uma DIV vazia com id="app".
-// É como se eu estivesse alugando um terreno vazio pra construir a loja.
-const rootElement = document.getElementById('app');
-
-if (rootElement) {
-    // Achei o terreno! Agora mando o React construir a interface lá dentro.
-    const root = createRoot(rootElement);
-    root.render(<App />);
-} else {
-    // Se der erro aqui, é porque alguém mexeu no HTML e tirou a div 'app'.
-    console.error('ERRO CRÍTICO: Não encontrei a div id="app" no HTML. O React não tem onde morar.');
-}
+const root = createRoot(document.getElementById('app'));
+root.render(<App />);

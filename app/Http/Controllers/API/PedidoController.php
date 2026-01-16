@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use App\Models\Pedido;
-use App\Models\Produto;
+use App\Models\Order;
+use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 
-class PedidoController extends Controller
+class OrderController extends Controller
 {
     /**
      * Lista os pedidos.
@@ -17,7 +17,7 @@ class PedidoController extends Controller
      */
     public function index()
     {
-        $pedidos = Pedido::with(['itens.produto', 'user'])
+        $pedidos = Order::with(['itens.produto', 'user'])
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -41,7 +41,7 @@ class PedidoController extends Controller
         try {
             return DB::transaction(function () use ($request) {
                 // Cria o pedido vazio
-                $pedido = Pedido::create([
+                $pedido = Order::create([
                     'user_id' => auth()->id(),
                     'status' => 'pendente',
                     'total' => 0, // Vamos calcular agora
@@ -51,7 +51,7 @@ class PedidoController extends Controller
 
                 // Processa cada item (Coxinha, Refri...)
                 foreach ($request->itens as $item) {
-                    $produto = Produto::find($item['produto_id']);
+                    $produto = Product::find($item['produto_id']);
                     $subtotal = $produto->preco * $item['quantidade'];
                     
                     $pedido->itens()->create([
@@ -79,7 +79,7 @@ class PedidoController extends Controller
      */
     public function updateStatus(Request $request, $id)
     {
-        $pedido = Pedido::findOrFail($id);
+        $pedido = Order::findOrFail($id);
         
         $request->validate([
             'status' => 'required|in:pendente,preparando,entrega,concluido,cancelado'
@@ -101,11 +101,11 @@ class PedidoController extends Controller
     {
         $hoje = now()->format('Y-m-d');
 
-        $vendasHoje = Pedido::whereDate('created_at', $hoje)
+        $vendasHoje = Order::whereDate('created_at', $hoje)
             ->where('status', '<>', 'cancelado')
             ->sum('total');
 
-        $pedidosPendentes = Pedido::where('status', 'pendente')->count();
+        $pedidosPendentes = Order::where('status', 'pendente')->count();
 
         return response()->json([
             'faturamento_hoje' => $vendasHoje,

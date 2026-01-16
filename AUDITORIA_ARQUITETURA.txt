@@ -1,0 +1,1725 @@
+=== 🏛️ AUDITORIA DE ARQUITETURA: COXINHA DELIVERY ===
+Data: sáb 27 dez 2025 18:21:56 -03
+Diretório Atual: /home/mark/projetos/coxinhadelivery
+
+========================================================
+📂 CAMADA 1: MODELS (app/Models)
+========================================================
+Funcionario.php*
+ItemPedido.php*
+LojaConfig.php*
+PedidoItem.php*
+Pedido.php*
+Produto.php*
+User.php*
+--- Conteúdo dos Arquivos ---
+📄 ARQUIVO: app/Models/Funcionario.php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Funcionario extends Model
+{
+    use HasFactory;
+
+    // Garante que o Laravel olhe para a tabela certa
+    protected $table = 'funcionarios';
+
+    // Lista de campos que eu permito salvar em massa (Segurança)
+    protected $fillable = [
+        'nome',
+        'telefone',
+        'cargo',
+        'placa_veiculo',
+        'modelo_veiculo',
+        'foto_url',
+        'ativo'
+    ];
+}
+-----------------------------------
+📄 ARQUIVO: app/Models/ItemPedido.php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class ItemPedido extends Model
+{
+    protected $table = 'pedido_itens';
+    protected $fillable = ['pedido_id', 'produto_id', 'quantidade', 'preco_unitario', 'subtotal', 'observacoes_item'];
+
+    public function produto() {
+        return $this->belongsTo(Produto::class);
+    }
+}
+-----------------------------------
+📄 ARQUIVO: app/Models/LojaConfig.php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class LojaConfig extends Model
+{
+    use HasFactory;
+
+    /**
+     * O nome da tabela no banco. 
+     * O Laravel até adivinha sozinho, mas eu gosto de deixar explícito 
+     * pra não ter confusão se um dia eu mudar o nome da classe.
+     */
+    protected $table = 'loja_configs';
+
+    /**
+     * Os campos que eu deixo o sistema alterar.
+     * Basicamente: o link da live, se a porta tá aberta e quanto tempo 
+     * o cliente vai ter que roer a unha esperando.
+     */
+    protected $fillable = [
+        'link_youtube',
+        'loja_aberta',
+        'tempo_espera_minutos'
+    ];
+
+    /**
+     * Os tipos dos dados.
+     * O 'loja_aberta' é boolean (verdadeiro/falso), não quero "sim" ou "não" escrito.
+     * O Laravel já converte isso sozinho pra mim.
+     */
+    protected $casts = [
+        'loja_aberta' => 'boolean',
+        'tempo_espera_minutos' => 'integer',
+    ];
+}
+-----------------------------------
+📄 ARQUIVO: app/Models/PedidoItem.php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class PedidoItem extends Model
+{
+    use HasFactory;
+    protected $table = 'pedido_itens';
+    protected $fillable = ['pedido_id', 'produto_id', 'quantidade', 'preco_unitario', 'observacoes'];
+    
+    public function produto()
+    {
+        return $this->belongsTo(Produto::class);
+    }
+}
+-----------------------------------
+📄 ARQUIVO: app/Models/Pedido.php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Pedido extends Model
+{
+    use HasFactory;
+
+    // Colunas autorizadas conforme o seu banco de dados real
+    protected $fillable = [
+        'numero_pedido',
+        'cliente_nome',
+        'cliente_telefone',
+        'status',
+        'tipo',
+        'valor_total',
+        'entregador_id',
+        'observacoes'
+    ];
+
+    public function itens()
+    {
+        return $this->hasMany(PedidoItem::class, 'pedido_id');
+    }
+}
+-----------------------------------
+📄 ARQUIVO: app/Models/Produto.php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Produto extends Model
+{
+    // O 'fillable' diz ao Laravel que esses campos podem ser gravados no banco
+    protected $fillable = ['nome', 'preco', 'imagem'];
+}
+-----------------------------------
+📄 ARQUIVO: app/Models/User.php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
+
+class User extends Authenticatable
+{
+    use HasApiTokens, HasFactory, Notifiable;
+
+    /**
+     * Aqui eu listei o que pode ser preenchido no cadastro. 
+     * Tirei o 'is_admin' e coloquei o 'role', porque agora é esse campo 
+     * que define se o cara é cliente, patrão ou quem frita o salgado.
+     */
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+        'role',
+    ];
+
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+    ];
+
+    /**
+     * --- A MÁGICA ACONTECE AQUI ---
+     * Essa função cria o atributo 'is_admin' virtualmente.
+     * Assim, quando a View pergunta $user->is_admin, o Laravel roda isso aqui
+     * e descobre a verdade.
+     */
+    public function getIsAdminAttribute()
+    {
+        return $this->role === 'admin';
+    }
+
+    /**
+     * Mantive sua função original também, caso use $user->isAdmin() em outro lugar.
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+}-----------------------------------
+
+========================================================
+📂 CAMADA 2: CONTROLLERS (app/Http/Controllers)
+========================================================
+Admin/
+API/
+Auth/
+Controller.php*
+EntregaController.php*
+PedidoController.php*
+ProfileController.php*
+VenderController.php
+--- Conteúdo dos Arquivos ---
+📄 ARQUIVO: app/Http/Controllers/Controller.php
+<?php
+
+namespace App\Http\Controllers;
+
+abstract class Controller
+{
+    //
+}
+-----------------------------------
+📄 ARQUIVO: app/Http/Controllers/PedidoController.php
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Models\Pedido;
+use App\Models\Produto; // Importante para listar as coxinhas
+
+class PedidoController extends Controller
+{
+    // 1. Função que mostra a tela do celular (Resolvendo o erro 'undefined method vender')
+    public function vender()
+    {
+        $produtos = Produto::all();
+        return view('vender', compact('produtos'));
+    }
+
+    // 2. Função que recebe o pedido do botão (API)
+    public function store(Request $request)
+    {
+        $request->validate([
+            'cliente' => 'required',
+            'produto_id' => 'required'
+        ]);
+
+        $pedido = Pedido::create([
+            'cliente' => $request->cliente,
+            'produto_id' => $request->produto_id,
+            'status' => 'pendente',
+            'numero' => rand(100, 999)
+        ]);
+
+        $pedido->load('produto');
+
+        return response()->json(['success' => true, 'pedido' => $pedido], 201);
+    }
+}
+-----------------------------------
+📄 ARQUIVO: app/Http/Controllers/API/ProdutoController.php
+<?php
+
+namespace App\Http\Controllers\API;
+
+use App\Http\Controllers\Controller;
+use App\Models\Produto;
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\File;
+
+class ProdutoController extends Controller
+{
+    public function index(): JsonResponse
+    {
+        $produtos = Produto::all();
+        return response()->json(['success' => true, 'data' => $produtos]);
+    }
+
+    public function store(Request $request): JsonResponse
+    {
+        try {
+            $validador = Validator::make($request->all(), [
+                'nome' => 'required|string|max:100',
+                'preco' => 'required|numeric',
+                'categoria' => 'required|string',
+                'estoque' => 'required|integer',
+                'imagem' => 'nullable|image|max:5120'
+            ]);
+
+            if ($validador->fails()) {
+                return response()->json(['success' => false, 'errors' => $validador->errors()], 422);
+            }
+
+            $dados = $validador->validated();
+
+            if ($request->hasFile('imagem')) {
+                $arquivo = $request->file('imagem');
+                $nomeArquivo = time() . '_' . $arquivo->getClientOriginalName();
+                $arquivo->move(public_path('uploads/produtos'), $nomeArquivo);
+                $dados['imagem'] = 'uploads/produtos/' . $nomeArquivo;
+            }
+
+            $produto = Produto::create($dados);
+
+            return response()->json(['success' => true, 'message' => 'Produto criado', 'data' => $produto], 201);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function update(Request $request, $id): JsonResponse
+    {
+        $produto = Produto::find($id);
+        if (!$produto) return response()->json(['success' => false, 'message' => 'Não encontrado'], 404);
+
+        $dados = $request->all();
+
+        if ($request->hasFile('imagem')) {
+            if ($produto->imagem && File::exists(public_path($produto->imagem))) {
+                File::delete(public_path($produto->imagem));
+            }
+
+            $arquivo = $request->file('imagem');
+            $nomeArquivo = time() . '_' . $arquivo->getClientOriginalName();
+            $arquivo->move(public_path('uploads/produtos'), $nomeArquivo);
+            $dados['imagem'] = 'uploads/produtos/' . $nomeArquivo;
+        }
+
+        $produto->update($dados);
+
+        return response()->json(['success' => true, 'message' => 'Produto atualizado', 'data' => $produto]);
+    }
+
+    public function destroy($id): JsonResponse
+    {
+        $produto = Produto::find($id);
+        if (!$produto) return response()->json(['success' => false, 'message' => 'Não encontrado'], 404);
+
+        if ($produto->imagem && File::exists(public_path($produto->imagem))) {
+            File::delete(public_path($produto->imagem));
+        }
+
+        $produto->delete();
+        return response()->json(['success' => true, 'message' => 'Produto e imagem removidos']);
+    }
+}
+-----------------------------------
+📄 ARQUIVO: app/Http/Controllers/API/PedidoController.php
+<?php
+
+namespace App\Http\Controllers\API;
+
+use App\Http\Controllers\Controller;
+use App\Models\Pedido;
+use App\Models\Produto;
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
+
+class PedidoController extends Controller
+{
+    /**
+     * Lista os pedidos.
+     * O Balcão (Carlos) vê os pendentes primeiro pra agilizar a cozinha.
+     */
+    public function index()
+    {
+        $pedidos = Pedido::with(['itens.produto', 'user'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json($pedidos);
+    }
+
+    /**
+     * Cria um novo pedido.
+     * O cliente manda os itens, e O SISTEMA calcula o preço. 
+     * Nada de mandar preço do front, pra ninguém burlar.
+     */
+    public function store(Request $request)
+    {
+        // 1. Valida se mandou os itens
+        $request->validate([
+            'itens' => 'required|array',
+            'itens.*.produto_id' => 'required|exists:produtos,id',
+            'itens.*.quantidade' => 'required|integer|min:1',
+        ]);
+
+        try {
+            return DB::transaction(function () use ($request) {
+                // Cria o pedido vazio
+                $pedido = Pedido::create([
+                    'user_id' => auth()->id(),
+                    'status' => 'pendente',
+                    'total' => 0, // Vamos calcular agora
+                ]);
+
+                $total = 0;
+
+                // Processa cada item (Coxinha, Refri...)
+                foreach ($request->itens as $item) {
+                    $produto = Produto::find($item['produto_id']);
+                    $subtotal = $produto->preco * $item['quantidade'];
+                    
+                    $pedido->itens()->create([
+                        'produto_id' => $produto->id,
+                        'quantidade' => $item['quantidade'],
+                        'preco_unitario' => $produto->preco,
+                    ]);
+
+                    $total += $subtotal;
+                }
+
+                // Atualiza o total final no banco
+                $pedido->update(['total' => $total]);
+
+                return response()->json($pedido->load('itens.produto'), 201);
+            });
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erro ao criar pedido: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Onde o Carlos trabalha.
+     * Ele muda de 'pendente' -> 'preparando' -> 'entrega'.
+     */
+    public function updateStatus(Request $request, $id)
+    {
+        $pedido = Pedido::findOrFail($id);
+        
+        $request->validate([
+            'status' => 'required|in:pendente,preparando,entrega,concluido,cancelado'
+        ]);
+
+        $pedido->update(['status' => $request->status]);
+
+        return response()->json([
+            'message' => 'Status atualizado para ' . $request->status,
+            'pedido' => $pedido
+        ]);
+    }
+
+    /**
+     * O Cofre do Patrão.
+     * Mostra quanto vendeu hoje. O Middleware já bloqueia o Carlos de ver isso.
+     */
+    public function dashboard()
+    {
+        $hoje = now()->format('Y-m-d');
+
+        $vendasHoje = Pedido::whereDate('created_at', $hoje)
+            ->where('status', '<>', 'cancelado')
+            ->sum('total');
+
+        $pedidosPendentes = Pedido::where('status', 'pendente')->count();
+
+        return response()->json([
+            'faturamento_hoje' => $vendasHoje,
+            'pedidos_na_fila' => $pedidosPendentes,
+            'mensagem' => 'O olho do dono é que engorda o gado.'
+        ]);
+    }
+}
+-----------------------------------
+📄 ARQUIVO: app/Http/Controllers/API/LojaConfigController.php
+<?php
+
+namespace App\Http\Controllers\API;
+
+use App\Http\Controllers\Controller;
+use App\Models\LojaConfig;
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Validator;
+
+class LojaConfigController extends Controller
+{
+    /**
+     * O App pergunta: "E aí, tá aberto? Tem live rolando?".
+     * Eu respondo com a verdade do momento. Essa rota todo mundo pode ver,
+     * porque o cliente precisa saber se a gente tá atendendo antes de pedir.
+     */
+    public function index(): JsonResponse
+    {
+        // Pega a primeira (e única) linha de configuração
+        $config = LojaConfig::first();
+        
+        return response()->json([
+            'success' => true, 
+            'data' => $config
+        ]);
+    }
+
+    /**
+     * Aqui é onde eu assumo o controle. 
+     * Fecho a loja se der ruim (acabou o gás), colo o link da live nova 
+     * ou aumento o tempo de espera se a cozinha estiver um caos.
+     * Só o patrão (eu) mexe aqui.
+     */
+    public function update(Request $request): JsonResponse
+    {
+        // Validação básica pra não salvar bobagem
+        $validator = Validator::make($request->all(), [
+            'link_youtube' => 'nullable|url', // Tem que ser link válido ou nulo
+            'loja_aberta' => 'required|boolean',
+            'tempo_espera_minutos' => 'required|integer|min:0'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        // Atualiza a configuração existente
+        $config = LojaConfig::first();
+        $config->update($validator->validated());
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Configurações da loja atualizadas com sucesso',
+            'data' => $config
+        ]);
+    }
+}
+-----------------------------------
+📄 ARQUIVO: app/Http/Controllers/API/AuthController.php
+<?php
+
+namespace App\Http\Controllers\API;
+
+use App\Http\Controllers\Controller;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
+use OpenApi\Annotations as OA;
+
+/**
+ * @OA\Info(title="CoxinhaDelivery API", version="1.0.0", description="API do sistema")
+ * @OA\Server(url="http://localhost/api")
+ */
+class AuthController extends Controller
+{
+    /**
+     * @OA\Post(
+     * path="/auth/register",
+     * tags={"Autenticação"},
+     * summary="Registrar novo usuário",
+     * @OA\RequestBody(
+     * required=true,
+     * @OA\JsonContent(
+     * required={"name","email","password","password_confirmation"},
+     * @OA\Property(property="name", type="string", example="João"),
+     * @OA\Property(property="email", type="string", format="email", example="joao@teste.com"),
+     * @OA\Property(property="password", type="string", format="password", example="12345678"),
+     * @OA\Property(property="password_confirmation", type="string", format="password", example="12345678")
+     * )
+     * ),
+     * @OA\Response(response=201, description="Criado com sucesso")
+     * )
+     */
+    public function register(Request $request): JsonResponse
+    {
+        // 1. Validação dos dados recebidos
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        // 2. Criação do usuário no banco
+        // Nota: O banco preenche 'is_admin' como false (0) automaticamente
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+        ]);
+
+        // 3. Criação do Token de acesso (Login automático após registro)
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        // 4. Retorno da resposta (O objeto $user já inclui o campo is_admin)
+        return response()->json([
+            'success' => true,
+            'message' => 'Usuário registrado com sucesso',
+            'data' => [
+                'user' => $user,
+                'access_token' => $token,
+                'token_type' => 'Bearer'
+            ]
+        ], 201);
+    }
+
+    /**
+     * @OA\Post(
+     * path="/auth/login",
+     * tags={"Autenticação"},
+     * summary="Login no sistema",
+     * @OA\RequestBody(
+     * required=true,
+     * @OA\JsonContent(
+     * required={"email","password"},
+     * @OA\Property(property="email", type="string", format="email", example="admin@coxinha.com"),
+     * @OA\Property(property="password", type="string", format="password", example="password")
+     * )
+     * ),
+     * @OA\Response(response=200, description="Login realizado")
+     * )
+     */
+    public function login(Request $request): JsonResponse
+    {
+        // 1. Validação simples
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|string|email',
+            'password' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        // 2. Tenta autenticar com email e senha
+        if (!Auth::attempt($request->only('email', 'password'))) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Credenciais inválidas'
+            ], 401);
+        }
+
+        // 3. Busca o usuário no banco
+        $user = User::where('email', $request->email)->firstOrFail();
+        
+        // 4. Remove tokens antigos (Login limpo) e gera um novo
+        $user->tokens()->delete();
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        // 5. Retorna dados + Token
+        // O Front-end deve olhar 'user.is_admin' para saber se libera o painel administrativo
+        return response()->json([
+            'success' => true,
+            'message' => 'Login realizado com sucesso',
+            'data' => [
+                'user' => $user,
+                'access_token' => $token,
+                'token_type' => 'Bearer'
+            ]
+        ]);
+    }
+
+    /**
+     * @OA\Post(
+     * path="/auth/logout",
+     * tags={"Autenticação"},
+     * summary="Sair do sistema",
+     * security={{"bearerAuth":{}}},
+     * @OA\Response(response=200, description="Logout realizado")
+     * )
+     */
+    public function logout(Request $request): JsonResponse
+    {
+        // Revoga apenas o token que está sendo usado agora
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Logout realizado com sucesso'
+        ]);
+    }
+
+    /**
+     * @OA\Get(
+     * path="/auth/me",
+     * tags={"Autenticação"},
+     * summary="Dados do usuário atual",
+     * security={{"bearerAuth":{}}},
+     * @OA\Response(response=200, description="Dados retornados")
+     * )
+     */
+    public function me(Request $request): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'message' => 'Dados do usuário',
+            'data' => [
+                'user' => $request->user() // Retorna nome, email e is_admin
+            ]
+        ]);
+    }
+
+    /**
+     * @OA\Put(
+     * path="/auth/me",
+     * tags={"Autenticação"},
+     * summary="Atualizar perfil",
+     * security={{"bearerAuth":{}}},
+     * @OA\Response(response=200, description="Perfil atualizado")
+     * )
+     */
+    public function updateProfile(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        // Validação (permite não enviar campos que não quer mudar)
+        $validator = Validator::make($request->all(), [
+            'name' => 'sometimes|string|max:255',
+            'email' => 'sometimes|string|email|max:255|unique:users,email,' . $user->id,
+            'password' => 'sometimes|string|min:8|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        // Atualiza apenas o que foi enviado
+        if ($request->has('name')) $user->name = $request->name;
+        if ($request->has('email')) $user->email = $request->email;
+        if ($request->has('password')) $user->password = Hash::make($request->password);
+
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Perfil atualizado com sucesso',
+            'data' => ['user' => $user]
+        ]);
+    }
+}
+-----------------------------------
+📄 ARQUIVO: app/Http/Controllers/Admin/ProdutoController.php
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\Produto;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+
+class ProdutoController extends Controller
+{
+    public function index() {
+        $produtos = Produto::all();
+        return view('admin.produtos.index', compact('produtos'));
+    }
+
+    public function store(Request $request) {
+        $dados = $request->validate([
+            'nome' => 'required|string|max:255',
+            'preco' => 'required|numeric|min:0',
+            'imagem' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        if ($request->hasFile('imagem')) {
+            $dados['imagem'] = $request->file('imagem')->store('produtos', 'public');
+        }
+
+        Produto::create($dados);
+        return back()->with('sucesso', 'Produto adicionado com foto!');
+    }
+
+    public function destroy(Produto $produto) {
+        if ($produto->imagem) {
+            Storage::disk('public')->delete($produto->imagem);
+        }
+        $produto->delete();
+        return back()->with('sucesso', 'Produto removido!');
+    }
+}
+-----------------------------------
+📄 ARQUIVO: app/Http/Controllers/Admin/PedidoController.php
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use App\Models\Pedido;
+use Illuminate\Support\Facades\Log;
+
+class PedidoController extends Controller
+{
+    public function index()
+    {
+        $vendas = Pedido::orderBy('created_at', 'desc')->get();
+        return view('admin.pedidos.historico', compact('vendas'));
+    }
+
+    public function storeAPI(Request $request)
+    {
+        try {
+            Log::info('Dados brutos recebidos:', $request->all());
+
+            // Criando o pedido respeitando as REGRAS DO BANCO (Null: NO)
+            $pedido = Pedido::create([
+                'numero_pedido'    => strtoupper(uniqid('PED-')),
+                'cliente_nome'     => $request->cliente ?? $request->cliente_nome ?? 'Cliente Sem Nome',
+                'cliente_telefone' => $request->telefone ?? '000000000', // REGRA: Não pode ser nulo
+                'status'           => 'pendente', // REGRA: Não pode ser nulo
+                'tipo'             => 'retirada', // REGRA: Deve ser 'retirada' ou 'entrega'
+                'valor_total'      => $request->total ?? 0.00, // REGRA: Não pode ser nulo
+                'observacoes'      => $request->observacoes ?? 'Pedido via Celular',
+            ]);
+
+            return response()->json(['success' => true, 'id' => $pedido->id], 201);
+
+        } catch (\Exception $e) {
+            Log::error("ERRO DE REGRA DE BANCO: " . $e->getMessage());
+            return response()->json([
+                'error' => 'Erro de validação no banco',
+                'mensagem' => $e->getMessage()
+            ], 500);
+        }
+    }
+}
+-----------------------------------
+📄 ARQUIVO: app/Http/Controllers/Admin/DashboardController.php
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\Pedido;
+use App\Models\PedidoItem;
+use Illuminate\Support\Facades\DB;
+
+class DashboardController extends Controller
+{
+    public function index()
+    {
+        $hoje = now()->today();
+
+        // Totais de hoje
+        $vendasHoje = Pedido::where('status', 'finalizado')
+                            ->whereDate('updated_at', $hoje)
+                            ->sum('valor_total');
+
+        $pedidosHoje = Pedido::whereDate('created_at', $hoje)->count();
+
+        // Produtos mais vendidos (Top 3)
+        $maisVendidos = PedidoItem::select('produto_id', DB::raw('SUM(quantidade) as total'))
+            ->groupBy('produto_id')
+            ->orderByDesc('total')
+            ->with('produto')
+            ->take(3)
+            ->get();
+
+        return view('admin.dashboard', compact('vendasHoje', 'pedidosHoje', 'maisVendidos'));
+    }
+}
+-----------------------------------
+📄 ARQUIVO: app/Http/Controllers/Admin/FuncionarioController.php
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\Funcionario;
+use Illuminate\Http\Request;
+
+class FuncionarioController extends Controller
+{
+    /**
+     * LISTAGEM (A TELA PRINCIPAL)
+     * Mostra a lista de todos os meus funcionários.
+     */
+    public function index()
+    {
+        // Pego todo mundo do banco
+        $funcionarios = Funcionario::all();
+        
+        // Mando pra tela de listagem (que vamos criar jaja)
+        return view('admin.funcionarios.index', compact('funcionarios'));
+    }
+
+    /**
+     * O FORMULÁRIO DE CADASTRO
+     * Abre a tela vazia pra eu digitar os dados de um novo contratado.
+     */
+    public function create()
+    {
+        return view('admin.funcionarios.create');
+    }
+
+    /**
+     * A AÇÃO DE SALVAR
+     * Recebe os dados do formulário e grava no banco.
+     */
+    public function store(Request $request)
+    {
+        // 1. Validação: Não deixo salvar se faltar o básico
+        $dados = $request->validate([
+            'nome' => 'required|string|max:255',
+            'telefone' => 'nullable|string|max:20',
+            'cargo' => 'required|in:COZINHEIRO,ENTREGADOR,FAXINEIRO,BALCONISTA,OUTRO',
+            // Placa só importa se for entregador, mas deixo passar string
+            'placa_veiculo' => 'nullable|string|max:10',
+            'modelo_veiculo' => 'nullable|string|max:50',
+        ]);
+
+        // 2. Gravar no Banco
+        Funcionario::create($dados);
+
+        // 3. Voltar pra lista avisando que deu certo
+        return redirect()->route('admin.funcionarios.index')
+                         ->with('sucesso', 'Funcionário contratado com sucesso!');
+    }
+
+    /**
+     * O FORMULÁRIO DE EDIÇÃO
+     * Abre a tela já preenchida pra eu mudar algo (ex: trocou de moto).
+     */
+    public function edit(Funcionario $funcionario)
+    {
+        return view('admin.funcionarios.edit', compact('funcionario'));
+    }
+
+    /**
+     * A AÇÃO DE ATUALIZAR
+     * Salva as mudanças que eu fiz.
+     */
+    public function update(Request $request, Funcionario $funcionario)
+    {
+        // 1. Valido tudo de novo
+        $dados = $request->validate([
+            'nome' => 'required|string|max:255',
+            'telefone' => 'nullable|string|max:20',
+            'cargo' => 'required',
+            'placa_veiculo' => 'nullable|string|max:10',
+            'modelo_veiculo' => 'nullable|string|max:50',
+            'ativo' => 'boolean' // Posso ativar/desativar aqui
+        ]);
+
+        // 2. Atualizo o registro
+        $funcionario->update($dados);
+
+        // 3. Volto pra lista
+        return redirect()->route('admin.funcionarios.index')
+                         ->with('sucesso', 'Dados do funcionário atualizados!');
+    }
+
+    /**
+     * AÇÃO DE EXCLUIR
+     * Remove o funcionário do sistema.
+     */
+    public function destroy(Funcionario $funcionario)
+    {
+        $funcionario->delete();
+
+        return redirect()->route('admin.funcionarios.index')
+                         ->with('sucesso', 'Funcionário removido!');
+    }
+}
+-----------------------------------
+📄 ARQUIVO: app/Http/Controllers/VenderController.php
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Models\Produto;
+
+class VenderController extends Controller
+{
+    public function index()
+    {
+        // Busca os produtos para mostrar na tela do celular
+        $produtos = Produto::all();
+        return view('vender', compact('produtos'));
+    }
+}
+-----------------------------------
+📄 ARQUIVO: app/Http/Controllers/EntregaController.php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Pedido;
+use Illuminate\Http\Request;
+
+class EntregaController extends Controller
+{
+    /**
+     * TELA DO ENTREGADOR
+     * ---------------------------------------------------
+     * Eu recebo o código (hash) pela URL.
+     * Procuro no meu banco se esse código existe.
+     * Se existir, eu abro a tela com os dados do pedido.
+     */
+    public function show($hash)
+    {
+        // Procuro o pedido que tem esse hash específico
+        $pedido = Pedido::where('hash_entrega', $hash)->firstOrFail();
+
+        // Mando para a tela de visualização do motoboy
+        return view('entrega.show', compact('pedido'));
+    }
+}
+-----------------------------------
+📄 ARQUIVO: app/Http/Controllers/ProfileController.php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Requests\ProfileUpdateRequest;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Redirect;
+use Illuminate\View\View;
+
+class ProfileController extends Controller
+{
+    /**
+     * Display the user's profile form.
+     */
+    public function edit(Request $request): View
+    {
+        return view('profile.edit', [
+            'user' => $request->user(),
+        ]);
+    }
+
+    /**
+     * Update the user's profile information.
+     */
+    public function update(ProfileUpdateRequest $request): RedirectResponse
+    {
+        $request->user()->fill($request->validated());
+
+        if ($request->user()->isDirty('email')) {
+            $request->user()->email_verified_at = null;
+        }
+
+        $request->user()->save();
+
+        return Redirect::route('profile.edit')->with('status', 'profile-updated');
+    }
+
+    /**
+     * Delete the user's account.
+     */
+    public function destroy(Request $request): RedirectResponse
+    {
+        $request->validateWithBag('userDeletion', [
+            'password' => ['required', 'current_password'],
+        ]);
+
+        $user = $request->user();
+
+        Auth::logout();
+
+        $user->delete();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return Redirect::to('/');
+    }
+}
+-----------------------------------
+
+========================================================
+📂 CAMADA 3: MIGRATIONS (database/migrations)
+========================================================
+0001_01_01_000000_create_users_table.php*
+0001_01_01_000001_create_cache_table.php*
+0001_01_01_000002_create_jobs_table.php*
+2025_01_01_000001_create_funcionarios_table.php*
+2025_01_01_000002_create_produtos_table.php*
+2025_01_01_000003_create_pedidos_table.php*
+2025_01_01_000004_create_pedido_itens_table.php*
+2025_12_13_012851_create_personal_access_tokens_table.php*
+2025_12_23_013404_add_is_admin_to_users_table.php*
+2025_12_25_164939_alter_users_table_add_role_field.php*
+2025_12_25_172350_create_loja_configs_table.php*
+2025_12_25_202740_create_pedido_items_table.php*
+2025_12_25_222913_alter_status_on_pedidos_table.php*
+2025_12_25_231616_add_imagem_to_produtos_table.php*
+2025_12_26_210344_prepare_users_table_for_google_and_whatsapp.php
+2025_12_26_234711_add_google_fields_to_users_table.php
+--- Conteúdo dos Arquivos (Apenas Tabelas de Negócio) ---
+📄 ARQUIVO: database/migrations/0001_01_01_000000_create_users_table.php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('users', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('email')->unique();
+            $table->timestamp('email_verified_at')->nullable();
+            $table->string('password');
+            $table->rememberToken();
+            $table->timestamps();
+        });
+
+        Schema::create('password_reset_tokens', function (Blueprint $table) {
+            $table->string('email')->primary();
+            $table->string('token');
+            $table->timestamp('created_at')->nullable();
+        });
+
+        Schema::create('sessions', function (Blueprint $table) {
+            $table->string('id')->primary();
+            $table->foreignId('user_id')->nullable()->index();
+            $table->string('ip_address', 45)->nullable();
+            $table->text('user_agent')->nullable();
+            $table->longText('payload');
+            $table->integer('last_activity')->index();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('users');
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('sessions');
+    }
+};
+-----------------------------------
+📄 ARQUIVO: database/migrations/0001_01_01_000001_create_cache_table.php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('cache', function (Blueprint $table) {
+            $table->string('key')->primary();
+            $table->mediumText('value');
+            $table->integer('expiration');
+        });
+
+        Schema::create('cache_locks', function (Blueprint $table) {
+            $table->string('key')->primary();
+            $table->string('owner');
+            $table->integer('expiration');
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('cache');
+        Schema::dropIfExists('cache_locks');
+    }
+};
+-----------------------------------
+📄 ARQUIVO: database/migrations/0001_01_01_000002_create_jobs_table.php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('jobs', function (Blueprint $table) {
+            $table->id();
+            $table->string('queue')->index();
+            $table->longText('payload');
+            $table->unsignedTinyInteger('attempts');
+            $table->unsignedInteger('reserved_at')->nullable();
+            $table->unsignedInteger('available_at');
+            $table->unsignedInteger('created_at');
+        });
+
+        Schema::create('job_batches', function (Blueprint $table) {
+            $table->string('id')->primary();
+            $table->string('name');
+            $table->integer('total_jobs');
+            $table->integer('pending_jobs');
+            $table->integer('failed_jobs');
+            $table->longText('failed_job_ids');
+            $table->mediumText('options')->nullable();
+            $table->integer('cancelled_at')->nullable();
+            $table->integer('created_at');
+            $table->integer('finished_at')->nullable();
+        });
+
+        Schema::create('failed_jobs', function (Blueprint $table) {
+            $table->id();
+            $table->string('uuid')->unique();
+            $table->text('connection');
+            $table->text('queue');
+            $table->longText('payload');
+            $table->longText('exception');
+            $table->timestamp('failed_at')->useCurrent();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('jobs');
+        Schema::dropIfExists('job_batches');
+        Schema::dropIfExists('failed_jobs');
+    }
+};
+-----------------------------------
+📄 ARQUIVO: database/migrations/2025_01_01_000001_create_funcionarios_table.php
+<?php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void {
+        Schema::create('funcionarios', function (Blueprint $table) {
+            $table->id();
+            $table->string('nome');
+            $table->string('telefone')->nullable();
+            $table->enum('cargo', ['COZINHEIRO', 'ENTREGADOR', 'FAXINEIRO', 'BALCONISTA', 'OUTRO']);
+            $table->string('placa_veiculo')->nullable();
+            $table->string('modelo_veiculo')->nullable();
+            $table->string('foto_url')->nullable();
+            $table->boolean('ativo')->default(true);
+            $table->timestamps();
+        });
+    }
+    public function down(): void { Schema::dropIfExists('funcionarios'); }
+};
+-----------------------------------
+📄 ARQUIVO: database/migrations/2025_01_01_000002_create_produtos_table.php
+<?php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void {
+        Schema::create('produtos', function (Blueprint $table) {
+            $table->id();
+            $table->string('nome');
+            $table->text('descricao')->nullable();
+            $table->decimal('preco', 10, 2);
+            $table->string('foto_url')->nullable();
+            $table->boolean('ativo')->default(true);
+            $table->timestamps();
+        });
+    }
+    public function down(): void { Schema::dropIfExists('produtos'); }
+};
+-----------------------------------
+📄 ARQUIVO: database/migrations/2025_01_01_000003_create_pedidos_table.php
+<?php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void {
+        Schema::create('pedidos', function (Blueprint $table) {
+            $table->id();
+            $table->string('numero_pedido')->unique(); // Ex: CX2024...
+            
+            // Cliente
+            $table->string('cliente_nome');
+            $table->string('cliente_telefone');
+            
+            // Status e Tipo
+            $table->enum('status', ['pendente', 'confirmado', 'em_preparo', 'pronto', 'entregue', 'cancelado'])->default('pendente');
+            $table->enum('tipo', ['retirada', 'entrega'])->default('retirada');
+            
+            // Financeiro
+            $table->decimal('valor_total', 10, 2);
+            
+            // Vínculo com Entregador (Já incluso aqui pra não dar erro depois)
+            $table->foreignId('entregador_id')->nullable()->constrained('funcionarios');
+            
+            $table->text('observacoes')->nullable();
+            $table->timestamps();
+        });
+    }
+    public function down(): void { Schema::dropIfExists('pedidos'); }
+};
+-----------------------------------
+📄 ARQUIVO: database/migrations/2025_01_01_000004_create_pedido_itens_table.php
+<?php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void {
+        Schema::create('pedido_itens', function (Blueprint $table) {
+            $table->id();
+            // Agora vai funcionar porque a tabela pedidos foi criada no passo 03
+            $table->foreignId('pedido_id')->constrained('pedidos')->onDelete('cascade');
+            $table->foreignId('produto_id')->constrained('produtos');
+            $table->integer('quantidade');
+            $table->decimal('preco_unitario', 10, 2);
+            $table->string('observacoes')->nullable();
+            $table->timestamps();
+        });
+    }
+    public function down(): void { Schema::dropIfExists('pedido_itens'); }
+};
+-----------------------------------
+📄 ARQUIVO: database/migrations/2025_12_13_012851_create_personal_access_tokens_table.php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('personal_access_tokens', function (Blueprint $table) {
+            $table->id();
+            $table->morphs('tokenable');
+            $table->text('name');
+            $table->string('token', 64)->unique();
+            $table->text('abilities')->nullable();
+            $table->timestamp('last_used_at')->nullable();
+            $table->timestamp('expires_at')->nullable()->index();
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('personal_access_tokens');
+    }
+};
+-----------------------------------
+📄 ARQUIVO: database/migrations/2025_12_23_013404_add_is_admin_to_users_table.php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('users', function (Blueprint $table) {
+            $table->boolean('is_admin')->default(false)->after('email');
+        });
+    }
+
+    public function down(): void
+    {
+        // Deixamos vazio para o rollback funcionar sem dar erro
+    }
+};
+-----------------------------------
+📄 ARQUIVO: database/migrations/2025_12_25_164939_alter_users_table_add_role_field.php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
+
+return new class extends Migration {
+    public function up(): void {
+        Schema::table('users', function (Blueprint $table) {
+            // Criamos o tipo do usuário. O padrão é 'cliente'.
+            $table->string('role')->default('cliente')->after('email');
+        });
+
+        // Migramos quem era is_admin = 1 para role = 'admin'
+        DB::table('users')->where('is_admin', true)->update(['role' => 'admin']);
+
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn('is_admin'); // Removemos o campo antigo
+        });
+    }
+
+    public function down(): void {
+        Schema::table('users', function (Blueprint $table) {
+            $table->boolean('is_admin')->default(false);
+        });
+        DB::table('users')->where('role', 'admin')->update(['is_admin' => true]);
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn('role');
+        });
+    }
+};
+-----------------------------------
+📄 ARQUIVO: database/migrations/2025_12_25_172350_create_loja_configs_table.php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
+
+return new class extends Migration
+{
+    /**
+     * Aqui é o painel de controle da nave.
+     * Em vez de ter que mexer no código pra fechar a loja ou mudar o link da live,
+     * a gente guarda tudo aqui. É só o patrão mudar no banco (ou painel) e o App obedece.
+     */
+    public function up(): void
+    {
+        Schema::create('loja_configs', function (Blueprint $table) {
+            $table->id();
+            
+            // A TV Coxinha
+            $table->string('link_youtube')->nullable()->comment('O link da live da fritadeira');
+            
+            // Botão de Pânico: Acabou a massa? Fecha a loja no App agora.
+            $table->boolean('loja_aberta')->default(true)->comment('Se false, o app mostra FECHADO');
+            
+            // Gestão de Expectativa: Se a cozinha travar, a gente aumenta esse número.
+            $table->integer('tempo_espera_minutos')->default(40)->comment('Tempo médio pro cliente não ficar perguntando');
+            
+            $table->timestamps();
+        });
+
+        // Já cria a configuração inicial pra gente não ter trabalho depois
+        DB::table('loja_configs')->insert([
+            'link_youtube' => null, // Começa sem live
+            'loja_aberta' => true,  // Começa aberta
+            'tempo_espera_minutos' => 40,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('loja_configs');
+    }
+};
+-----------------------------------
+📄 ARQUIVO: database/migrations/2025_12_25_202740_create_pedido_items_table.php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('pedido_items', function (Blueprint $table) {
+            $table->id();
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('pedido_items');
+    }
+};
+-----------------------------------
+📄 ARQUIVO: database/migrations/2025_12_25_222913_alter_status_on_pedidos_table.php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('pedidos', function (Blueprint $table) {
+            // Mudando para text para aceitar qualquer tamanho e não dar mais erro 500
+            $table->text('status')->change();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('pedidos', function (Blueprint $table) {
+            $table->string('status', 20)->change();
+        });
+    }
+};
+-----------------------------------
+📄 ARQUIVO: database/migrations/2025_12_25_231616_add_imagem_to_produtos_table.php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up()
+    {
+        Schema::table('produtos', function (Blueprint $table) {
+            $table->string('imagem')->nullable()->after('preco');
+        });
+    }
+
+    public function down()
+    {
+        Schema::table('produtos', function (Blueprint $table) {
+            $table->dropColumn('imagem');
+        });
+    }
+};
+-----------------------------------
+📄 ARQUIVO: database/migrations/2025_12_26_210344_prepare_users_table_for_google_and_whatsapp.php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    /**
+     * Aplica as mudanças para o Google e WhatsApp.
+     */
+    public function up(): void {
+        Schema::table('users', function (Blueprint $table) {
+            // 1. Identificação Social (Abaixo do ID)
+            if (!Schema::hasColumn('users', 'google_id')) {
+                $table->string('google_id')->nullable()->unique()->after('id');
+            }
+            if (!Schema::hasColumn('users', 'avatar')) {
+                $table->string('avatar')->nullable()->after('email');
+            }
+
+            // 2. Regra de Negócio: Telefone (Abaixo do Avatar)
+            if (!Schema::hasColumn('users', 'telefone')) {
+                $table->string('telefone')->nullable()->after('avatar');
+            }
+            if (!Schema::hasColumn('users', 'telefone_verificado_at')) {
+                $table->timestamp('telefone_verificado_at')->nullable()->after('telefone');
+            }
+            
+            // 3. Segurança: Tornar senha opcional para quem usa Google
+            $table->string('password')->nullable()->change();
+        });
+    }
+
+    /**
+     * Reverte as mudanças se algo der errado.
+     */
+    public function down(): void {
+        Schema::table('users', function (Blueprint $table) {
+            $table->string('password')->nullable(false)->change();
+            $table->dropColumn(['google_id', 'avatar', 'telefone', 'telefone_verificado_at']);
+        });
+    }
+};
+-----------------------------------
+📄 ARQUIVO: database/migrations/2025_12_26_234711_add_google_fields_to_users_table.php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('users', function (Blueprint $table) {
+            //
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('users', function (Blueprint $table) {
+            //
+        });
+    }
+};
+-----------------------------------
+
+========================================================
+📂 CAMADA 4: ROTAS (routes/web.php e api.php)
+========================================================
+📄 ARQUIVO: routes/web.php
+<?php
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\PedidoController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\ProdutoController;
+use App\Http\Controllers\Admin\PedidoController as AdminPedidoController;
+
+/*
+|--------------------------------------------------------------------------
+| ROTAS DO COXINHA DELIVERY 🍗
+|--------------------------------------------------------------------------
+*/
+
+// 1. TELA DO CELULAR (PDV - Cliente final)
+Route::get('/', [PedidoController::class, 'vender'])->name('vender');
+
+// 2. ROTA DE LOGIN (Dashboard)
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
+
+// 3. ÁREA ADMINISTRATIVA
+// AQUI ESTAVA O ERRO: Adicionei ->name('admin.') para corrigir o erro 500 dos produtos
+Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+    
+    // Painel Principal (admin. + dashboard = admin.dashboard)
+    Route::get('/painel', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Produtos (admin. + produtos.index = admin.produtos.index) <--- ISSO CONSERTA O ERRO 500
+    Route::resource('produtos', ProdutoController::class);
+
+    // --- GERENCIAMENTO DE PEDIDOS ---
+    
+    // Tela da Cozinha
+    Route::get('/pedidos/cozinha', [AdminPedidoController::class, 'cozinha'])->name('pedidos.cozinha');
+    
+    // Novo Pedido
+    Route::get('/pedidos/criar', [AdminPedidoController::class, 'create'])->name('pedidos.create');
+    
+    // Histórico (Index)
+    Route::get('/pedidos', [AdminPedidoController::class, 'index'])->name('pedidos.index'); 
+    
+    // Salvar Pedido
+    Route::post('/pedidos', [AdminPedidoController::class, 'store'])->name('pedidos.store');
+
+    // Atalho Histórico
+    Route::get('/pedidos/historico', [AdminPedidoController::class, 'index'])->name('pedidos.historico');
+    
+    // Concluir Pedido
+    Route::patch('/pedidos/{pedido}/concluir', [AdminPedidoController::class, 'concluir'])->name('pedidos.concluir');
+});
+
+require __DIR__.'/auth.php';
+// --- ROTAS DE AUTENTICAÇÃO GOOGLE ---
+use App\Http\Controllers\Auth\GoogleAuthController;
+
+Route::get('auth/google', [GoogleAuthController::class, 'redirectToGoogle'])->name('auth.google');
+Route::get('auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback']);
+
+// Rota temporária para a verificação (vamos criar o controller dela a seguir)
+Route::get('verificar-telefone', function () {
+    return "Tela de Verificação de Telefone (WhatsApp/SMS) - Em breve aqui o formulário!";
+})->name('verificar.telefone')->middleware('auth');
+📄 ARQUIVO: routes/api.php
+<?php
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\PedidoController;
+
+// Rota profissional para o React enviar pedidos
+Route::post('/pedidos', [PedidoController::class, 'storeAPI']);

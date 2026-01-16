@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Pedido;
-use App\Models\PedidoItem;
+use App\Models\Order;
+use App\Models\OrderItem;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
@@ -14,14 +14,14 @@ class DashboardController extends Controller
         $hoje = now()->today();
 
         // Totais de hoje
-        $vendasHoje = Pedido::where('status', 'finalizado')
+        $vendasHoje = Order::where('status', 'finalizado')
                             ->whereDate('updated_at', $hoje)
                             ->sum('valor_total');
 
-        $pedidosHoje = Pedido::whereDate('created_at', $hoje)->count();
+        $pedidosHoje = Order::whereDate('created_at', $hoje)->count();
 
-        // Produtos mais vendidos (Top 3)
-        $maisVendidos = PedidoItem::select('produto_id', DB::raw('SUM(quantidade) as total'))
+        // Products mais vendidos (Top 3)
+        $maisVendidos = OrderItem::select('produto_id', DB::raw('SUM(quantidade) as total'))
             ->groupBy('produto_id')
             ->orderByDesc('total')
             ->with('produto')
