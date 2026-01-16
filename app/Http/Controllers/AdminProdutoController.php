@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
-class AdminProductController extends Controller
+class AdminProdutoController extends Controller
 {
     // Cadastrar novo produto com Imagem (Local ou Internet)
     public function store(Request $request)

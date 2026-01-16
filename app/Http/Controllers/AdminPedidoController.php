@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use Illuminate\Http\Request;
 
-class AdminOrderController extends Controller
+class AdminPedidoController extends Controller
 {
     // Lista TODOS os pedidos (Painel do Dono)
     public function index(Request $request)
