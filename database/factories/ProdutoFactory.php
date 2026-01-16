@@ -2,25 +2,20 @@
 
 namespace Database\Factories;
 
+use App\Models\Produto;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-/**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Produto>
- */
 class ProdutoFactory extends Factory
 {
-    protected $model = \App\Models\Produto::class;
+    protected $model = Produto::class;
 
-    /**
-     * Define the model's default state.
-     */
     public function definition(): array
     {
         return [
-            'nome' => $this->faker->word(),            // nome do produto
-            'descricao' => $this->faker->sentence(),   // descrição curta
-            'preco' => $this->faker->randomFloat(2, 5, 100), // preço entre 5 e 100
-            'quantidade' => $this->faker->numberBetween(1, 50), // estoque
+            'nome' => $this->faker->word(),
+            'preco' => $this->faker->randomFloat(2, 1, 100),
+            'estoque' => $this->faker->numberBetween(0, 100),
+            'disponivel' => true,
         ];
     }
 }
