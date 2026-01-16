@@ -12,6 +12,14 @@ class Pedido extends Model
     protected $table = 'pedidos';
     protected $fillable = ['cliente_nome', 'cliente_telefone', 'status', 'tipo', 'valor_total', 'numero_pedido'];
 
+    const STATUS = [
+        'pendente' => 'Pendente',
+        'em_preparo' => 'Em Preparo',
+        'pronto' => 'Pronto',
+        'entregue' => 'Entregue',
+        'cancelado' => 'Cancelado'
+    ];
+
     protected static function booted()
     {
         static::creating(function ($pedido) {
@@ -24,5 +32,12 @@ class Pedido extends Model
     public function itens()
     {
         return $this->hasMany(PedidoItem::class, 'pedido_id');
+    }
+
+    public function calcularTotal()
+    {
+        $this->valor_total = $this->itens->sum('subtotal');
+        $this->save();
+        return $this->valor_total;
     }
 }
