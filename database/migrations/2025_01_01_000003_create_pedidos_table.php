@@ -10,9 +10,12 @@ return new class extends Migration
     {
         Schema::create('pedidos', function (Blueprint $table) {
             $table->id();
-            // Aqui está a correção: criando o vínculo com o usuário
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->string('numero_pedido')->unique()->nullable();
+            $table->string('cliente_nome');
+            $table->string('cliente_telefone');
+            $table->decimal('valor_total', 10, 2)->default(0);
             $table->string('status')->default('pendente');
+            $table->string('tipo')->default('entrega');
             $table->timestamps();
         });
     }
