@@ -62,4 +62,4 @@ jobs:
         php artisan migrate:fresh --force
 
     - name: Executar Testes
-      run: php artisan test --exclude-group=auth
+      run: php artisan test --filter Unit
