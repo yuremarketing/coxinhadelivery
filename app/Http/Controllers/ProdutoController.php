@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Product;
+use App\Models\Produto;
 use Illuminate\Http\Request;
 
 class ProdutoController extends Controller
 {
     public function index()
     {
-        // Retorna todos os produtos em formato JSON
-        return response()->json(Product::all());
+        // Agora busca 'Produto' (PT) que existe, e não 'Product' (EN)
+        return response()->json(Produto::all());
     }
 }

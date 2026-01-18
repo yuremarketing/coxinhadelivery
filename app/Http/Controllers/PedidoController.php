@@ -2,51 +2,62 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Order;
-use App\Models\OrderItem;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use App\Models\Pedido;
+use App\Models\Produto;
 
 class PedidoController extends Controller
 {
+    public function index(Request $request)
+    {
+        // Retorna os pedidos do usuário logado com os itens
+        return $request->user()->pedidos()->with('itens')->get();
+    }
+
     public function store(Request $request)
     {
-        // Validação
-        $dados = $request->validate([
+        // 1. Validação (Apenas ID e Quantidade)
+        $input = $request->validate([
             'itens' => 'required|array',
             'itens.*.produto_id' => 'required|exists:produtos,id',
             'itens.*.quantidade' => 'required|integer|min:1',
-            'itens.*.preco_unitario' => 'required|numeric',
         ]);
 
-        try {
-            return DB::transaction(function () use ($dados, $request) {
-                
-                // --- A MÁGICA ACONTECE AQUI ---
-                // Pegamos o ID do usuário diretamente do Token (request->user())
-                // Não usamos mais '1' fixo.
-                $user = $request->user();
-                
-                $pedido = Order::create([
-                    'user_id' => $user->id, 
-                    'status' => 'pendente'
-                ]);
+        // 2. Calcular o Total REAL (Segurança de Preço)
+        $totalGeral = 0;
+        $itensParaSalvar = [];
 
-                // Cria os Itens
-                foreach ($dados['itens'] as $item) {
-                    OrderItem::create([
-                        'pedido_id' => $pedido->id,
-                        'produto_id' => $item['produto_id'],
-                        'quantidade' => $item['quantidade'],
-                        'preco_unitario' => $item['preco_unitario']
-                    ]);
-                }
+        foreach ($input['itens'] as $item) {
+            $produto = Produto::find($item['produto_id']);
+            
+            if (!$produto) {
+                continue; 
+            }
 
-                return response()->json($pedido->load('itens'), 201);
-            });
+            $precoReal = $produto->preco;
+            $quantidade = $item['quantidade'];
 
-        } catch (\Exception $e) {
-            return response()->json(['erro' => 'Erro ao processar venda: ' . $e->getMessage()], 500);
+            // Calculamos o total aqui no servidor
+            $totalGeral += ($precoReal * $quantidade);
+
+            // Preparamos os itens para salvar depois
+            $itensParaSalvar[] = [
+                'produto_id' => $produto->id,
+                'quantidade' => $quantidade,
+                'preco_unitario' => $precoReal 
+            ];
         }
+
+        // 3. Criar o Pedido (AGORA COM O CAMPO TOTAL)
+        $pedido = $request->user()->pedidos()->create([
+            'total' => $totalGeral, // <--- AQUI ESTAVA FALTANDO!
+            'status' => 'pendente',
+            'numero_pedido' => 'CX' . time() // Gera um número único simples
+        ]);
+
+        // 4. Salvar os Itens do pedido
+        $pedido->itens()->createMany($itensParaSalvar);
+
+        return response()->json($pedido, 201);
     }
 }

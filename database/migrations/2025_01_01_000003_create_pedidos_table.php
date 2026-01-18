@@ -10,12 +10,13 @@ return new class extends Migration
     {
         Schema::create('pedidos', function (Blueprint $table) {
             $table->id();
-            $table->string('numero_pedido')->unique()->nullable();
-            $table->string('cliente_nome');
-            $table->string('cliente_telefone');
-            $table->decimal('valor_total', 10, 2)->default(0);
+            
+            // AQUI ESTÁ A COLUNA QUE FALTAVA
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            
+            $table->decimal('total', 10, 2);
             $table->string('status')->default('pendente');
-            $table->string('tipo')->default('entrega');
+            $table->string('numero_pedido')->nullable();
             $table->timestamps();
         });
     }

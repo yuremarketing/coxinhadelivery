@@ -2,42 +2,28 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class Pedido extends Model
 {
     use HasFactory;
 
-    protected $table = 'pedidos';
-    protected $fillable = ['cliente_nome', 'cliente_telefone', 'status', 'tipo', 'valor_total', 'numero_pedido'];
-
-    const STATUS = [
-        'pendente' => 'Pendente',
-        'em_preparo' => 'Em Preparo',
-        'pronto' => 'Pronto',
-        'entregue' => 'Entregue',
-        'cancelado' => 'Cancelado'
+    // A LISTA VIP: Só o que está aqui entra no banco
+    protected $fillable = [
+        'user_id',
+        'total',          // <--- O Porteiro agora vai deixar o total entrar!
+        'status',
+        'numero_pedido'
     ];
 
-    protected static function booted()
+    public function usuario()
     {
-        static::creating(function ($pedido) {
-            if (!$pedido->numero_pedido) {
-                $pedido->numero_pedido = 'CX' . date('Ymd') . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
-            }
-        });
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function itens()
     {
-        return $this->hasMany(PedidoItem::class, 'pedido_id');
-    }
-
-    public function calcularTotal()
-    {
-        $this->valor_total = $this->itens->sum('subtotal');
-        $this->save();
-        return $this->valor_total;
+        return $this->hasMany(PedidoItem::class);
     }
 }

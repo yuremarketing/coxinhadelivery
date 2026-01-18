@@ -2,35 +2,24 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class PedidoItem extends Model
 {
-    protected $table = 'pedido_itens';
-    protected $fillable = ['pedido_id', 'produto_id', 'quantidade', 'preco_unitario', 'subtotal'];
+    use HasFactory;
 
-    protected static function booted()
-    {
-        static::creating(function ($item) {
-            // Calcula o subtotal se não vier preenchido
-            if (!$item->subtotal) {
-                $item->subtotal = $item->quantidade * $item->preco_unitario;
-            }
+    protected $table = 'pedido_itens'; // Garante que o Laravel ache a tabela certa
 
-            // Lógica de baixar o estoque que o teste exige
-            if ($item->produto) {
-                $item->produto->decrement('estoque', $item->quantidade);
-            }
-        });
-    }
-
-    public function pedido()
-    {
-        return $this->belongsTo(Pedido::class, 'pedido_id');
-    }
+    protected $fillable = [
+        'pedido_id',
+        'produto_id',
+        'quantidade',
+        'preco_unitario' // Liberando o preço também
+    ];
 
     public function produto()
     {
-        return $this->belongsTo(Produto::class, 'produto_id');
+        return $this->belongsTo(Produto::class);
     }
 }
