@@ -2,22 +2,18 @@
 
 namespace Database\Factories;
 
-use App\Models\Pedido;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use App\Models\User;
 
 class PedidoFactory extends Factory
 {
-    protected $model = Pedido::class;
-
     public function definition(): array
     {
         return [
-            'numero_pedido' => 'PED-' . strtoupper($this->faker->unique()->bothify('??###')),
-            'cliente_nome' => $this->faker->name(),
-            'cliente_telefone' => $this->faker->phoneNumber(),
-            'valor_total' => 0,
+            'user_id' => User::factory(),
+            'total' => $this->faker->randomFloat(2, 50, 200),
             'status' => 'pendente',
-            'tipo' => 'entrega',
+            'numero_pedido' => 'CX' . $this->faker->unique()->numerify('##########'),
         ];
     }
 }
