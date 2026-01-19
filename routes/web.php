@@ -33,3 +33,8 @@ Route::get('/criar-admin-master', function () {
     return "Usuário Administrador criado com sucesso!";
 });
 require __DIR__.'/auth.php';
+
+// Rota provisória para o erro do Google sumir
+Route::get('/auth/google', function () {
+    return "Login com Google em breve!";
+})->name('auth.google');
