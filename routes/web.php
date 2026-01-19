@@ -32,3 +32,4 @@ Route::get('/criar-admin-master', function () {
 
     return "Usuário Administrador criado com sucesso!";
 });
+require __DIR__.'/auth.php';
