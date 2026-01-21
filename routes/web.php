@@ -9,15 +9,16 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
 
+// --- MUDANÇA AQUI: Redireciona a home direto para o login ---
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('login');
 });
-
-Route::get('/vender', [VenderController::class, 'index'])->name('vender.index');
 
 Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
+
+Route::get('/vender', [VenderController::class, 'index'])->name('vender.index');
 
 // --- LOGIN COM GOOGLE ---
 Route::get('/auth/google', function () {
@@ -41,14 +42,7 @@ Route::get('/auth/google/callback', function () {
     }
 });
 
-// --- ROTA DE LIMPEZA (Útil para emergências) ---
-Route::get('/limpar-cache', function() {
-    \Artisan::call('config:clear');
-    \Artisan::call('cache:clear');
-    return 'Cache limpo!';
-});
-
-// --- ROTAS DE PERFIL (CORREÇÃO DO ERRO) ---
+// --- ROTAS DE PERFIL ---
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
