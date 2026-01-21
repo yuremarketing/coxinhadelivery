@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\VenderController;
 use App\Models\User;
@@ -17,18 +18,6 @@ Route::get('/vender', [VenderController::class, 'index'])->name('vender.index');
 Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
-
-Route::get('/criar-admin-master', function () {
-    User::firstOrCreate(
-        ['email' => 'admin@teste.com'],
-        [
-            'name' => 'Yuri Admin',
-            'password' => Hash::make('12345678'),
-            'role' => 'admin',
-        ]
-    );
-    return "Admin criado!";
-});
 
 // --- LOGIN COM GOOGLE ---
 Route::get('/auth/google', function () {
@@ -50,6 +39,20 @@ Route::get('/auth/google/callback', function () {
     } catch (\Exception $e) {
         return redirect('/login')->with('error', 'Erro Google: ' . $e->getMessage());
     }
+});
+
+// --- ROTA DE LIMPEZA (Útil para emergências) ---
+Route::get('/limpar-cache', function() {
+    \Artisan::call('config:clear');
+    \Artisan::call('cache:clear');
+    return 'Cache limpo!';
+});
+
+// --- ROTAS DE PERFIL (CORREÇÃO DO ERRO) ---
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
 require __DIR__.'/auth.php';
