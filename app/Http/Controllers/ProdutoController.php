@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Storage;
 
 class ProdutoController extends Controller
 {
-    // 1. Listar
+    // 1. Listar (Admin)
     public function index()
     {
         $produtos = Produto::all();
@@ -40,14 +40,14 @@ class ProdutoController extends Controller
         return redirect()->route('produtos.index')->with('success', 'Produto criado com sucesso!');
     }
 
-    // 4. Tela de Editar (NOVO)
+    // 4. Tela de Editar
     public function edit($id)
     {
         $produto = Produto::findOrFail($id);
         return view('produtos.edit', compact('produto'));
     }
 
-    // 5. Atualizar no Banco (NOVO)
+    // 5. Atualizar no Banco
     public function update(Request $request, $id)
     {
         $produto = Produto::findOrFail($id);
@@ -59,7 +59,6 @@ class ProdutoController extends Controller
 
         $dados = $request->all();
 
-        // Se enviou nova imagem, apaga a velha e sobe a nova
         if ($request->hasFile('imagem')) {
             if ($produto->imagem) {
                 Storage::disk('public')->delete($produto->imagem);
@@ -71,7 +70,7 @@ class ProdutoController extends Controller
         return redirect()->route('produtos.index')->with('success', 'Produto atualizado!');
     }
 
-    // 6. Excluir (NOVO)
+    // 6. Excluir
     public function destroy($id)
     {
         $produto = Produto::findOrFail($id);
@@ -82,5 +81,12 @@ class ProdutoController extends Controller
 
         $produto->delete();
         return redirect()->route('produtos.index')->with('success', 'Produto excluído!');
+    }
+
+    // 7. CARDÁPIO PÚBLICO (NOVO!)
+    public function cardapio()
+    {
+        $produtos = Produto::all();
+        return view('cardapio', compact('produtos'));
     }
 }

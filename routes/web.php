@@ -11,7 +11,8 @@ use Laravel\Socialite\Facades\Socialite;
 use App\Http\Controllers\ProdutoController;
 use Illuminate\Support\Facades\Artisan;
 
-Route::get('/', function () { return redirect()->route('login'); });
+// --- AQUI ESTÁ A MUDANÇA: A Home agora mostra o Cardápio ---
+Route::get('/', [ProdutoController::class, 'cardapio'])->name('cardapio');
 
 Route::get('/dashboard', function () {
     return view('dashboard');
