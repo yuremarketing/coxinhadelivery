@@ -1,4 +1,3 @@
-cat <<'EOF' > resources/views/cardapio.blade.php
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -78,4 +77,3 @@ cat <<'EOF' > resources/views/cardapio.blade.php
 
 </body>
 </html>
-EOF
