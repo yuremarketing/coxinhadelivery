@@ -56,3 +56,28 @@ use App\Http\Controllers\ProdutoController;
 Route::get('/produtos', [ProdutoController::class, 'index'])->name('produtos.index');
 Route::get('/produtos/criar', [ProdutoController::class, 'create'])->name('produtos.create');
 Route::post('/produtos', [ProdutoController::class, 'store'])->name('produtos.store');
+
+// --- ROTA DE EMERGÊNCIA PARA CONFIGURAR O SERVIDOR (SEM SHELL) ---
+use Illuminate\Support\Facades\Artisan;
+
+Route::get('/configurar-servidor', function () {
+    try {
+        // 1. Rodar as migrações (criar tabelas)
+        Artisan::call('migrate', ['--force' => true]);
+        $migracao = Artisan::output();
+
+        // 2. Criar o link das imagens
+        Artisan::call('storage:link');
+        $link = Artisan::output();
+
+        return "<h1>SUCESSO! SERVIDOR CONFIGURADO.</h1>
+                <hr>
+                <h3>Migração:</h3> <pre>$migracao</pre>
+                <h3>Storage Link:</h3> <pre>$link</pre>
+                <hr>
+                <p>Agora pode acessar <a href='/produtos'>/produtos</a> que vai funcionar!</p>";
+
+    } catch (\Exception $e) {
+        return "<h1>ERRO CRÍTICO</h1> <pre>" . $e->getMessage() . "</pre>";
+    }
+});
