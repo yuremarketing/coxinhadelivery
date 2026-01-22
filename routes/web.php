@@ -17,17 +17,14 @@ use Illuminate\Support\Facades\Artisan;
 |--------------------------------------------------------------------------
 */
 
-// Redireciona a home para o login
 Route::get('/', function () {
     return redirect()->route('login');
 });
 
-// Dashboard
 Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-// Rota de Vender
 Route::get('/vender', [VenderController::class, 'index'])->name('vender.index');
 
 // --- LOGIN COM GOOGLE ---
@@ -46,23 +43,24 @@ Route::get('/auth/google/callback', function () {
             'email_verified_at' => now(),
         ]);
         Auth::login($user);
-        return redirect('/dashboard');
+        return redirect()->route('dashboard');
     } catch (\Exception $e) {
         return redirect('/login')->with('error', 'Erro Google: ' . $e->getMessage());
     }
 });
 
-// --- ROTAS DE PERFIL ---
+// --- ÁREA RESTRITA (SÓ LOGADO PODE ENTRAR) ---
 Route::middleware('auth')->group(function () {
+    // Perfil
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
 
-// --- ROTAS DE PRODUTOS ---
-Route::get('/produtos', [ProdutoController::class, 'index'])->name('produtos.index');
-Route::get('/produtos/criar', [ProdutoController::class, 'create'])->name('produtos.create');
-Route::post('/produtos', [ProdutoController::class, 'store'])->name('produtos.store');
+    // Produtos (AGORA PROTEGIDOS AQUI DENTRO)
+    Route::get('/produtos', [ProdutoController::class, 'index'])->name('produtos.index');
+    Route::get('/produtos/criar', [ProdutoController::class, 'create'])->name('produtos.create');
+    Route::post('/produtos', [ProdutoController::class, 'store'])->name('produtos.store');
+});
 
 // --- ROTA DE EMERGÊNCIA (CONFIGURAR SERVIDOR) ---
 Route::get('/configurar-servidor', function () {
