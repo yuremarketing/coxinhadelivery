@@ -81,3 +81,26 @@ Route::get('/configurar-servidor', function () {
         return "<h1>ERRO CRÍTICO</h1> <pre>" . $e->getMessage() . "</pre>";
     }
 });
+
+// --- ROTA DE EMERGÊNCIA PARA CONFIGURAR O SERVIDOR (SEM SHELL) ---
+use Illuminate\Support\Facades\Artisan;
+
+Route::get('/configurar-servidor', function () {
+    try {
+        Artisan::call('migrate', ['--force' => true]);
+        $migracao = Artisan::output();
+
+        Artisan::call('storage:link');
+        $link = Artisan::output();
+
+        return "<h1>SUCESSO! SERVIDOR CONFIGURADO.</h1>
+                <hr>
+                <h3>Migração:</h3> <pre>$migracao</pre>
+                <h3>Storage Link:</h3> <pre>$link</pre>
+                <hr>
+                <p>Agora pode acessar <a href='/produtos'>/produtos</a> que vai funcionar!</p>";
+
+    } catch (\Exception $e) {
+        return "<h1>ERRO CRÍTICO</h1> <pre>" . $e->getMessage() . "</pre>";
+    }
+});
