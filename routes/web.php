@@ -50,3 +50,9 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__.'/auth.php';
+
+use App\Http\Controllers\ProdutoController;
+
+Route::get('/produtos', [ProdutoController::class, 'index'])->name('produtos.index');
+Route::get('/produtos/criar', [ProdutoController::class, 'create'])->name('produtos.create');
+Route::post('/produtos', [ProdutoController::class, 'store'])->name('produtos.store');
