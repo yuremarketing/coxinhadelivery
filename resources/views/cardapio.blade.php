@@ -1,3 +1,4 @@
+cat <<'EOF' > resources/views/cardapio.blade.php
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -59,9 +60,11 @@
                         {{ $produto->descricao ?? 'Uma explosão de sabor a cada mordida.' }}
                     </p>
 
-                    <button class="w-full mt-6 bg-red-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-red-700 transition flex items-center justify-center gap-2">
-                        <span>🛒</span> Quero essa!
-                    </button>
+                    <a href="https://wa.me/5511999999999?text=Olá, tenho interesse na {{ $produto->nome }}" 
+                       target="_blank"
+                       class="block w-full mt-6 bg-green-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-600 transition flex items-center justify-center gap-2 text-center decoration-none">
+                        <span>📱</span> Pedir no Zap
+                    </a>
                 </div>
             </div>
             @endforeach
@@ -75,3 +78,4 @@
 
 </body>
 </html>
+EOF
